@@ -10,6 +10,7 @@ import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -30,7 +31,8 @@ import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity {
     ViewPager vp;
-    LinearLayout ll;
+    Button viewChangeButton;
+    //LinearLayout ll;
     Bundle bundle;
     EditText tag;
     String myJSON;
@@ -46,19 +48,26 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        // Toast.makeText(getApplicationContext(), "qwe", Toast.LENGTH_SHORT).show();
 
         tag = (EditText) findViewById(R.id.tagSearch);
         vp = (ViewPager) findViewById(R.id.vp);//프래그먼트 보는 화면
-        ll = (LinearLayout) findViewById(R.id.ll);//프래그먼트 버튼들
-
-        TextView tab_first = (TextView) findViewById(R.id.tab_first);
-        TextView tab_second = (TextView) findViewById(R.id.tab_second);
-        //  Toast.makeText(getApplicationContext(), "qw11111e", Toast.LENGTH_LONG).show();
+        viewChangeButton=(Button) findViewById(R.id.viewChangeButton);
         vp.setAdapter(new pagerAdapter(getSupportFragmentManager()));
         //  Log.d(this.getClass().getName(),"여기");
         vp.setCurrentItem(0);
-
+        viewChangeButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(vp.getCurrentItem()==0) {//현재 화면이 리스트이면
+                    vp.setCurrentItem(1);//지도를 뛰움
+                    viewChangeButton.setText("리스트보기");
+                }
+                else {//아니라면
+                    vp.setCurrentItem(0);//리스트를 뛰움
+                    viewChangeButton.setText("지도보기");
+                }
+            }
+        });
         tag.setOnEditorActionListener(new EditText.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
@@ -71,44 +80,18 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
-        tab_first.setOnClickListener(movePageListener);
-        tab_first.setTag(0);
-        tab_second.setOnClickListener(movePageListener);
-        tab_second.setTag(1);
+       // tab_first.setOnClickListener(movePageListener);
+       // tab_first.setTag(0);
+       // tab_second.setOnClickListener(movePageListener);
+        //tab_second.setTag(1);
 
-        tab_first.setSelected(true);
+      //  tab_first.setSelected(true);
         bundle = new Bundle();//액티비티에서 프래그먼트로 데이터전달을 위한 객체
-        vp.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-
-            }
-
-            @Override
-            public void onPageSelected(int position) {
-                int i = 0;
-                while (i < 2) {
-                    if (position == i) {
-                        ll.findViewWithTag(i).setSelected(true);
-                    } else {
-                        ll.findViewWithTag(i).setSelected(false);
-                    }
-                    i++;
-                }
-            }
-
-            @Override
-            public void onPageScrollStateChanged(int state) {
-
-            }
-        });
     }
 
-    View.OnClickListener movePageListener = new View.OnClickListener() {
+   /* View.OnClickListener movePageListener = new View.OnClickListener() {
         @Override
         public void onClick(View v) {
-            int tag = (int) v.getTag();
-
             int i = 0;
             while (i < 2) {
                 if (tag == i) {
@@ -118,9 +101,9 @@ public class MainActivity extends AppCompatActivity {
                 }
                 i++;
             }
-            vp.setCurrentItem(tag);
+            vp.setCurrentItem(i);
         }
-    };
+    };*/
 
     private class pagerAdapter extends FragmentStatePagerAdapter {
         public pagerAdapter(android.support.v4.app.FragmentManager fm) {
@@ -169,6 +152,7 @@ public class MainActivity extends AppCompatActivity {
             bundle.putDouble("lng" + i, stores[i].gpsPosition.longitude);
         }
         vp.setAdapter(new pagerAdapter(getSupportFragmentManager()));
+        viewChangeButton.setText("지도보기");
     }
 
     protected void showList() {
