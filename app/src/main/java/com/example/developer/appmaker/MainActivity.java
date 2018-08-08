@@ -1,19 +1,26 @@
 package com.example.developer.appmaker;
 
-import android.content.Intent;
+import android.Manifest;
+import android.content.pm.PackageManager;
+import android.location.LocationManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
+import android.widget.ArrayAdapter;
+import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.model.LatLng;
 
@@ -22,6 +29,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.Console;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -31,8 +39,10 @@ import java.util.HashMap;
 
 public class MainActivity extends AppCompatActivity {
     ViewPager vp;
-    Button viewChangeButton;
-    //LinearLayout ll;
+    Button viewChangeButton,gpsSearchButton;
+    String[] languages;
+
+    AutoCompleteTextView gpsSearch;
     Bundle bundle;
     EditText tag;
     String myJSON;
@@ -41,74 +51,125 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG_ID = "id";
     private static final String TAG_NAME = "name";
     private static final String TAG_ADD = "address";
-
     JSONArray peoples = null;
+
+    private GpsInfo gps;
+    private final int PERMISSIONS_ACCESS_FINE_LOCATION = 1000;
+    private final int PERMISSIONS_ACCESS_COARSE_LOCATION = 1001;
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
+
+        gpsSearch= (AutoCompleteTextView) findViewById(R.id.gpsSearch);
+        gps = new GpsInfo(MainActivity.this);
         tag = (EditText) findViewById(R.id.tagSearch);
         vp = (ViewPager) findViewById(R.id.vp);//프래그먼트 보는 화면
-        viewChangeButton=(Button) findViewById(R.id.viewChangeButton);
-        vp.setAdapter(new pagerAdapter(getSupportFragmentManager()));
-        //  Log.d(this.getClass().getName(),"여기");
-        vp.setCurrentItem(0);
-        viewChangeButton.setOnClickListener(new View.OnClickListener() {
+
+
+        gpsSearchButton=  (Button)findViewById(R.id.gpsSearchButton);
+        // gps 권한 요청을 해야 함
+            callPermission();
+        languages =new String[7];
+
+        languages[0]="서버:강원대 정문";
+        languages[1]="서버:남춘천";
+        languages[2]="서버:강원대 후문";
+        languages[3]="서버:명동";
+        languages[4]="개인:후평동";
+        languages[5]="개인:스무숲";
+        languages[6]="개인:스무숲2";
+
+        gpsSearch.setThreshold(1);//문자 개수를 매개변수값 이상 입력하여야 실행됨(매개변수를 0이하로 주어도 1자 이상)
+        gpsSearch.setAdapter(new ArrayAdapter<String>(this,android.R.layout.select_dialog_item, languages));
+        gpsSearch.setSingleLine();
+        gpsSearch.setOnTouchListener(new View.OnTouchListener(){
             @Override
-            public void onClick(View view) {
-                if(vp.getCurrentItem()==0) {//현재 화면이 리스트이면
-                    vp.setCurrentItem(1);//지도를 뛰움
-                    viewChangeButton.setText("리스트보기");
-                }
-                else {//아니라면
-                    vp.setCurrentItem(0);//리스트를 뛰움
-                    viewChangeButton.setText("지도보기");
-                }
+            public boolean onTouch(View v, MotionEvent event){
+                if(gpsSearch.getText().length()>0)
+                    gpsSearch.setText("");
+                else
+                    gpsSearch.showDropDown();
+                return false;
             }
         });
+
+        gpsSearchButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View arg0) {
+
+                // GPS 사용유무 가져오기
+                if (gps.isGetLocation()) {
+                    double latitude = gps.getLatitude();
+                    double longitude = gps.getLongitude();
+                    gpsSearch.setText("현재 위치");
+                } else {
+                    gpsSearch.setText("직접설정(GPS사용불가)");
+                    // GPS 를 사용할수 없으므로
+                }
+                vp.setAdapter(new gpsPagerAdapter(getSupportFragmentManager()));
+            }
+        });
+        //callPermission();  // 권한 요청을 해야 함
+
+        /* viewChangeButton=(Button) findViewById(R.id.viewChangeButton);
+        viewChangeButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                // TODO Auto-generated method stub
+                vp.setCurrentItem(0);
+            }
+        });*/
         tag.setOnEditorActionListener(new EditText.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 switch (actionId) {
                     case EditorInfo.IME_ACTION_SEARCH://엔터(검색)치면
-                         search(tag.getText().toString());
+                         listSearch(tag.getText().toString());
                       //  getData("http://210.115.48.131/getjson.php");
                         break;
                 }
                 return true;
             }
         });
-       // tab_first.setOnClickListener(movePageListener);
-       // tab_first.setTag(0);
-       // tab_second.setOnClickListener(movePageListener);
-        //tab_second.setTag(1);
-
-      //  tab_first.setSelected(true);
         bundle = new Bundle();//액티비티에서 프래그먼트로 데이터전달을 위한 객체
     }
+    private void callPermission() {
+        // Check the SDK version and whether the permission is already granted or not.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            gpsSearch.setText("GPS권한없음(직접설정)");
+            requestPermissions(
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    PERMISSIONS_ACCESS_FINE_LOCATION);
 
-   /* View.OnClickListener movePageListener = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            int i = 0;
-            while (i < 2) {
-                if (tag == i) {
-                    ll.findViewWithTag(i).setSelected(true);
-                } else {
-                    ll.findViewWithTag(i).setSelected(false);
-                }
-                i++;
-            }
-            vp.setCurrentItem(i);
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                && checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED){
+            requestPermissions(
+                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
+                    PERMISSIONS_ACCESS_COARSE_LOCATION);
         }
-    };*/
+        else//이전에 gps권한을 받았을때
+        {
+            if (gps.isGetLocation())
+                gpsSearch.setText("현재 위치");
+            else
+                gpsSearch.setText("GPS 꺼짐(직접설정)");
+        }
+    }
 
-    private class pagerAdapter extends FragmentStatePagerAdapter {
-        public pagerAdapter(android.support.v4.app.FragmentManager fm) {
+
+
+
+    private class searchResultPagerAdapter extends FragmentStatePagerAdapter {
+        public searchResultPagerAdapter(android.support.v4.app.FragmentManager fm) {
             super(fm);
-
         }
 
         @Override
@@ -135,8 +196,32 @@ public class MainActivity extends AppCompatActivity {
             return 2;
         }
     }
+    private class gpsPagerAdapter extends FragmentStatePagerAdapter {
+        public gpsPagerAdapter(android.support.v4.app.FragmentManager fm) {
+            super(fm);
+        }
 
-    private void search(String tag) {
+        @Override
+        public android.support.v4.app.Fragment getItem(int position) {
+            Fragment rFragment;
+            switch (position) {
+                case 0: {
+                    rFragment = new SecondFragment();
+                    rFragment.setArguments(bundle);
+                    return rFragment;
+                }
+                default:
+                    return null;
+            }
+        }
+
+        @Override
+        public int getCount() {
+            return 1;
+        }
+    }
+
+    private void listSearch(String tag) {
 
         StoreInfo stores[] = new StoreInfo[5];
         stores[0] = new StoreInfo(new LatLng(37.8730, 127.7445), tag + "정문", 5.0f);
@@ -151,8 +236,7 @@ public class MainActivity extends AppCompatActivity {
             bundle.putDouble("lat" + i, stores[i].gpsPosition.latitude);
             bundle.putDouble("lng" + i, stores[i].gpsPosition.longitude);
         }
-        vp.setAdapter(new pagerAdapter(getSupportFragmentManager()));
-        viewChangeButton.setText("지도보기");
+        vp.setAdapter(new searchResultPagerAdapter(getSupportFragmentManager()));
     }
 
     protected void showList() {
@@ -175,8 +259,7 @@ public class MainActivity extends AppCompatActivity {
                 //HashMap<String, String> persons = new HashMap<String, String>();
 
             }
-            vp.setAdapter(new pagerAdapter(getSupportFragmentManager()));
-
+            vp.setAdapter(new searchResultPagerAdapter(getSupportFragmentManager()));
         } catch (JSONException e) {
             e.printStackTrace();
         }
