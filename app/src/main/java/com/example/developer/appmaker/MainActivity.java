@@ -37,11 +37,11 @@ import java.net.URL;
 import java.util.HashMap;
 
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements GPSFinderFragment.OnMyListener{
     ViewPager vp;
-    Button viewChangeButton,gpsSearchButton;
+    Button viewChangeButton,gpsFindButton;
     String[] languages;
-
+    LatLng position;
     AutoCompleteTextView gpsSearch;
     Bundle bundle;
     EditText tag;
@@ -57,7 +57,10 @@ public class MainActivity extends AppCompatActivity {
     private final int PERMISSIONS_ACCESS_FINE_LOCATION = 1000;
     private final int PERMISSIONS_ACCESS_COARSE_LOCATION = 1001;
 
-
+    public void onReceivedLatLng(LatLng position){
+        this.position=position;
+        gpsSearch.setText("좌표: "+position.latitude+"  "+position.longitude);
+    }
 
 
     @Override
@@ -73,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
         vp = (ViewPager) findViewById(R.id.vp);//프래그먼트 보는 화면
 
 
-        gpsSearchButton=  (Button)findViewById(R.id.gpsSearchButton);
+        gpsFindButton=  (Button)findViewById(R.id.gpsSearchButton);
         // gps 권한 요청을 해야 함
             callPermission();
         languages =new String[7];
@@ -100,18 +103,23 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        gpsSearchButton.setOnClickListener(new View.OnClickListener() {
+        gpsFindButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View arg0) {
+                bundle = new Bundle();//액티비티에서 프래그먼트로 데이터전달을 위한 객체
 
+                double gpsLat;
+                double gpsLng;
                 // GPS 사용유무 가져오기
-                if (gps.isGetLocation()) {
-                    double latitude = gps.getLatitude();
-                    double longitude = gps.getLongitude();
+                if (gps.isGetLocation()) {//사용가능할때
+                    position=new LatLng(gps.lat,gps.lng);
                     gpsSearch.setText("현재 위치");
                 } else {
                     gpsSearch.setText("직접설정(GPS사용불가)");
-                    // GPS 를 사용할수 없으므로
+                    position=new LatLng(37.869071,127.742778);
+                    // GPS 를 사용할수 없으므로 기본위치에서
                 }
+                bundle.putDouble("GPSLat", position.latitude);
+                bundle.putDouble("GPSLng", position.longitude);
                 vp.setAdapter(new gpsPagerAdapter(getSupportFragmentManager()));
             }
         });
@@ -129,6 +137,8 @@ public class MainActivity extends AppCompatActivity {
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 switch (actionId) {
                     case EditorInfo.IME_ACTION_SEARCH://엔터(검색)치면
+
+                        bundle = new Bundle();//액티비티에서 프래그먼트로 데이터전달을 위한 객체
                          listSearch(tag.getText().toString());
                       //  getData("http://210.115.48.131/getjson.php");
                         break;
@@ -136,7 +146,6 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             }
         });
-        bundle = new Bundle();//액티비티에서 프래그먼트로 데이터전달을 위한 객체
     }
     private void callPermission() {
         // Check the SDK version and whether the permission is already granted or not.
@@ -206,7 +215,7 @@ public class MainActivity extends AppCompatActivity {
             Fragment rFragment;
             switch (position) {
                 case 0: {
-                    rFragment = new SecondFragment();
+                    rFragment = new GPSFinderFragment();
                     rFragment.setArguments(bundle);
                     return rFragment;
                 }

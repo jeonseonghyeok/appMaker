@@ -31,7 +31,7 @@ public class GpsInfo extends Service implements LocationListener {
 
     Location location;
     double lat; // 위도
-    double lon; // 경도
+    double lng; // 경도
 
     // 최소 GPS 정보 업데이트 거리 10미터
     private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 10;
@@ -88,7 +88,7 @@ public class GpsInfo extends Service implements LocationListener {
                         if (location != null) {
                             // 위도 경도 저장
                             lat = location.getLatitude();
-                            lon = location.getLongitude();
+                            lng = location.getLongitude();
                         }
                     }
                 }
@@ -104,7 +104,7 @@ public class GpsInfo extends Service implements LocationListener {
                                     .getLastKnownLocation(LocationManager.GPS_PROVIDER);
                             if (location != null) {
                                 lat = location.getLatitude();
-                                lon = location.getLongitude();
+                                lng = location.getLongitude();
                             }
                         }
                     }
@@ -141,9 +141,9 @@ public class GpsInfo extends Service implements LocationListener {
      * */
     public double getLongitude(){
         if(location != null){
-            lon = location.getLongitude();
+            lng = location.getLongitude();
         }
-        return lon;
+        return lng;
     }
 
     /**
