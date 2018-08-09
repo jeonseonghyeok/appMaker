@@ -30,8 +30,8 @@ public class GpsInfo extends Service implements LocationListener {
     boolean isGetLocation = false;
 
     Location location;
-    double lat; // 위도
-    double lng; // 경도
+    private double lat; // 위도
+    private double lng; // 경도
 
     // 최소 GPS 정보 업데이트 거리 10미터
     private static final long MIN_DISTANCE_CHANGE_FOR_UPDATES = 10;

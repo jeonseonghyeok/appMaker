@@ -2,7 +2,6 @@ package com.example.developer.appmaker;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
-import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.support.v4.app.Fragment;
@@ -13,12 +12,14 @@ import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.inputmethod.EditorInfo;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -29,12 +30,9 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.Console;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.HashMap;
 
 
 public class MainActivity extends AppCompatActivity implements GPSFinderFragment.OnMyListener{
@@ -59,7 +57,10 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
 
     public void onReceivedLatLng(LatLng position){
         this.position=position;
-        gpsSearch.setText("좌표: "+position.latitude+"  "+position.longitude);
+        if(isChunCheon(position.latitude,position.longitude))
+            gpsSearch.setText("지정좌표: "+position.latitude+"  "+position.longitude);
+        else
+            gpsSearch.setText("조회불가지역");
     }
 
 
@@ -75,7 +76,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         tag = (EditText) findViewById(R.id.tagSearch);
         vp = (ViewPager) findViewById(R.id.vp);//프래그먼트 보는 화면
 
-
+        vp.setAdapter(new gpsPagerAdapter(getSupportFragmentManager()));
         gpsFindButton=  (Button)findViewById(R.id.gpsSearchButton);
         // gps 권한 요청을 해야 함
             callPermission();
@@ -102,44 +103,38 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                 return false;
             }
         });
-
-        gpsFindButton.setOnClickListener(new View.OnClickListener() {
+        gpsSearch.setOnItemClickListener(new AdapterView.OnItemClickListener() {//검색결과에서 선택시
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int index, long id) {
+                ListView listView = (ListView) parent;
+                String item = (String) listView.getItemAtPosition(index);//결과리스트 순서에서의 포지션
+                Toast.makeText(getApplicationContext(), item, Toast.LENGTH_LONG).show();
+                gpsMove(37.867071,127.742678);
+            }
+        });
+        gpsFindButton.setOnClickListener(new OnClickListener() {
             public void onClick(View arg0) {
                 bundle = new Bundle();//액티비티에서 프래그먼트로 데이터전달을 위한 객체
-
-                double gpsLat;
-                double gpsLng;
+                gps = new GpsInfo(MainActivity.this);
                 // GPS 사용유무 가져오기
-                if (gps.isGetLocation()) {//사용가능할때
-                    position=new LatLng(gps.lat,gps.lng);
+                if (gps.isGetLocation() && isChunCheon(gps.getLatitude(),gps.getLongitude())) {//사용가능할때&&춘천일때
+                    gpsMove(gps.getLatitude(),gps.getLongitude());
                     gpsSearch.setText("현재 위치");
                 } else {
                     gpsSearch.setText("직접설정(GPS사용불가)");
-                    position=new LatLng(37.869071,127.742778);
+                    gpsMove(37.869071,127.742778);
                     // GPS 를 사용할수 없으므로 기본위치에서
                 }
-                bundle.putDouble("GPSLat", position.latitude);
-                bundle.putDouble("GPSLng", position.longitude);
-                vp.setAdapter(new gpsPagerAdapter(getSupportFragmentManager()));
             }
         });
-        //callPermission();  // 권한 요청을 해야 함
-
-        /* viewChangeButton=(Button) findViewById(R.id.viewChangeButton);
-        viewChangeButton.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                // TODO Auto-generated method stub
-                vp.setCurrentItem(0);
-            }
-        });*/
         tag.setOnEditorActionListener(new EditText.OnEditorActionListener() {
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 switch (actionId) {
                     case EditorInfo.IME_ACTION_SEARCH://엔터(검색)치면
-
                         bundle = new Bundle();//액티비티에서 프래그먼트로 데이터전달을 위한 객체
-                         listSearch(tag.getText().toString());
+
+                         //listSearch(tag.getText().toString());
                       //  getData("http://210.115.48.131/getjson.php");
                         break;
                 }
@@ -165,15 +160,15 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                     PERMISSIONS_ACCESS_COARSE_LOCATION);
         }
         else//이전에 gps권한을 받았을때
-        {
-            if (gps.isGetLocation())
-                gpsSearch.setText("현재 위치");
-            else
-                gpsSearch.setText("GPS 꺼짐(직접설정)");
-        }
+        gpsFirstStart();
     }
 
-
+    private  boolean isChunCheon(double lat,double lng){
+        if((37.84<lat && lat<37.96)&&(127.70<lng && lng<127.79))
+            return true;
+        else
+            return false;
+    }
 
 
     private class searchResultPagerAdapter extends FragmentStatePagerAdapter {
@@ -229,7 +224,19 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
             return 1;
         }
     }
-
+    private void gpsFirstStart()   {
+        bundle = new Bundle();//액티비티에서 프래그먼트로 데이터전달을 위한 객체
+        gps = new GpsInfo(MainActivity.this);
+        // GPS 사용유무 가져오기
+        if (gps.isGetLocation() && isChunCheon(gps.getLatitude(),gps.getLongitude())) {//사용가능할때&&춘천일때
+            gpsMove(gps.getLatitude(),gps.getLongitude());
+            gpsSearch.setText("현재 위치");
+        } else {
+            gpsSearch.setText("GPS 꺼짐(직접설정)");
+            gpsMove(37.869071,127.742778);
+            // GPS 를 사용할수 없으므로 기본위치에서
+        }
+    }
     private void listSearch(String tag) {
 
         StoreInfo stores[] = new StoreInfo[5];
@@ -312,7 +319,12 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         g.execute(url);
 
     }
-
+    private void gpsMove(double lat,double lng){
+        position=new LatLng(37.867071,127.742678);
+        bundle.putDouble("GPSLat", lat);
+        bundle.putDouble("GPSLng", lng);
+        vp.setAdapter(new gpsPagerAdapter(getSupportFragmentManager()));
+    }
 }
 
 
