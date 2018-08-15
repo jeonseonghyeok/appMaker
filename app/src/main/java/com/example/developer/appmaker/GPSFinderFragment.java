@@ -4,9 +4,14 @@ import android.content.Context;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -20,24 +25,25 @@ import com.google.android.gms.maps.model.MarkerOptions;
 public class GPSFinderFragment extends Fragment implements OnMapReadyCallback {
     private MapView mapView = null;
     private GoogleMap mMap;
-    private boolean isPermission = false;
     private LatLng gpsPosition;
-    public interface OnMyListener{
+    private Button saveButton;
+    private TextView positionName;
+
+    public interface OnMyListener {
         void onReceivedLatLng(LatLng position);
     }
+
     private OnMyListener mOnMyListener;
+
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-        if(getActivity() != null && getActivity() instanceof OnMyListener){
+        if (getActivity() != null && getActivity() instanceof OnMyListener) {
             mOnMyListener = (OnMyListener) getActivity();
         }
     }
-    {
-        if(mOnMyListener !=null){
-            mOnMyListener.onReceivedLatLng(gpsPosition);
-        }
-    }
+
+
     public GPSFinderFragment() {
         // required
     }
@@ -57,7 +63,8 @@ public class GPSFinderFragment extends Fragment implements OnMapReadyCallback {
 
         mapView = (MapView) layout.findViewById(R.id.map);
         mapView.getMapAsync(this);
-
+        saveButton = (Button) layout.findViewById(R.id.saveButton);
+        positionName = (TextView) layout.findViewById(R.id.positionName);
         return layout;
     }
 
@@ -121,21 +128,17 @@ public class GPSFinderFragment extends Fragment implements OnMapReadyCallback {
 
         //final Marker[] m= new Marker[1];
         gpsPosition = new LatLng(getArguments().getDouble("GPSLat"), getArguments().getDouble("GPSLng"));
-        final MarkerOptions a=new MarkerOptions().position(gpsPosition).icon(BitmapDescriptorFactory.fromResource(R.drawable.android));
-        mMap.addMarker(a);
+        final MarkerOptions position = new MarkerOptions().position(gpsPosition).icon(BitmapDescriptorFactory.fromResource(R.drawable.android));
+        mMap.addMarker(position);
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(gpsPosition, 15.5f));
-
         mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng latLng) {
-                    mOnMyListener.onReceivedLatLng(latLng);
-                    mMap.clear();
-                    a.position(latLng);
-                    mMap.addMarker(a);
-                }
+            mMap.clear();
+            mOnMyListener.onReceivedLatLng(latLng);
+            position.position(latLng);
+            mMap.addMarker(position);
+            }
         });
-
-
     }
 }
-

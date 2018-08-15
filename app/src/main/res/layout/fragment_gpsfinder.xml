@@ -6,11 +6,57 @@
 
     <!-- Activity에서는 fragment로 구현해야되지만
     Fragment로 구현하기위해서는 MapView를 사용해야함-->
+
     <com.google.android.gms.maps.MapView
         android:id="@+id/map"
+        android:name="com.google.android.gms.maps.MapFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:name="com.google.android.gms.maps.MapFragment"
-        />
+        android:layout_weight="1" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="false"
+        android:layout_alignParentRight="false"
+        android:layout_alignParentTop="false"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingBottom="30dp"
+        android:paddingLeft="50dp"
+        android:paddingRight="50dp">
+
+        <EditText
+            android:id="@+id/positionName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentStart="true"
+            android:layout_margin="10dp"
+            android:layout_marginStart="47dp"
+            android:layout_weight="1"
+            android:background="#ebc"
+            android:gravity="center"
+            android:hint="장소이름"
+            android:inputType="text"
+            android:maxLength="8"
+            android:paddingBottom="8dp"
+            android:paddingTop="8dp"
+            android:selectAllOnFocus="false"
+            android:singleLine="false"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/saveButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_alignTop="@+id/positionName"
+            android:layout_toEndOf="@+id/positionName"
+            android:layout_weight="3"
+            android:text="등록"
+            android:visibility="visible" />
+
+    </LinearLayout>
 
 </RelativeLayout>

@@ -2,6 +2,8 @@ package com.example.developer.appmaker;
 
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.support.v4.app.Fragment;
@@ -9,6 +11,7 @@ import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -30,6 +33,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -54,8 +58,12 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
     private GpsInfo gps;
     private final int PERMISSIONS_ACCESS_FINE_LOCATION = 1000;
     private final int PERMISSIONS_ACCESS_COARSE_LOCATION = 1001;
+    SQLiteDatabase sqliteDB;
 
-    public void onReceivedLatLng(LatLng position){
+
+
+
+    public void onReceivedLatLng(LatLng position){//GPSFinderFragment에서 좌표를 선택할 때
         this.position=position;
         if(isChunCheon(position.latitude,position.longitude))
             gpsSearch.setText("지정좌표: "+position.latitude+"  "+position.longitude);
@@ -79,7 +87,14 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         vp.setAdapter(new gpsPagerAdapter(getSupportFragmentManager()));
         gpsFindButton=  (Button)findViewById(R.id.gpsSearchButton);
         // gps 권한 요청을 해야 함
-            callPermission();
+        callPermission();
+        //데이터베이스를 생성
+        sqliteDB = init_database();
+        init_tables() ;
+
+        //String sqlCreateTbl = "CREATE TABLE ORDER_T (NAME TEXT)" ;
+       //sqliteDB.execSQL(sqlCreateTbl) ;
+
         languages =new String[7];
 
         languages[0]="서버:강원대 정문";
@@ -134,7 +149,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                     case EditorInfo.IME_ACTION_SEARCH://엔터(검색)치면
                         bundle = new Bundle();//액티비티에서 프래그먼트로 데이터전달을 위한 객체
 
-                         //listSearch(tag.getText().toString());
+                         listSearch(tag.getText().toString());
                       //  getData("http://210.115.48.131/getjson.php");
                         break;
                 }
@@ -142,6 +157,36 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
             }
         });
     }
+
+    private void init_tables() {
+        if (sqliteDB != null) {
+        String sqlCreateTbl = "CREATE TABLE IF NOT EXISTS CONTACT_T (" +
+                "NO" + "INTEGER NOT NULL," +
+                "NAME " + "TEXT," +
+                "PHONE " + "TEXT," +
+                "OVER20 " + "INTEGER" +
+                ")" ;
+        System.out.println(sqlCreateTbl);
+        sqliteDB.execSQL(sqlCreateTbl) ;
+        }
+    }
+
+
+    private SQLiteDatabase init_database() {
+        SQLiteDatabase db = null ;
+        // File file = getDatabasePath("contact.db") ;
+        File file = new File(getFilesDir(), "contact.db") ;
+        System.out.println("PATH : " + file.toString()) ;
+        try { db = SQLiteDatabase.openOrCreateDatabase(file, null) ;
+        } catch (SQLiteException e) { e.printStackTrace() ;
+        }
+        if (db == null) {
+            System.out.println("DB creation failed. " + file.getAbsolutePath()) ;
+        }
+        return db ;
+    }
+
+
     private void callPermission() {
         // Check the SDK version and whether the permission is already granted or not.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
