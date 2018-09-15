@@ -10,7 +10,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.TextView;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -28,9 +27,10 @@ public class GPSFinderFragment extends Fragment implements OnMapReadyCallback {
     private LatLng gpsPosition;
     private Button saveButton;
     private TextView positionName;
-
+    Marker position;
     public interface OnMyListener {
         void onReceivedLatLng(LatLng position);
+        void onReceivedSavePosition(TextView positionName);
     }
 
     private OnMyListener mOnMyListener;
@@ -124,21 +124,73 @@ public class GPSFinderFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        //정문위치 lng127.7385 lat 37.8663
+        //정문위치 lat 37.8663 lng127.7385
 
         //final Marker[] m= new Marker[1];
         gpsPosition = new LatLng(getArguments().getDouble("GPSLat"), getArguments().getDouble("GPSLng"));
-        final MarkerOptions position = new MarkerOptions().position(gpsPosition).icon(BitmapDescriptorFactory.fromResource(R.drawable.android));
-        mMap.addMarker(position);
+        position=mMap.addMarker(new MarkerOptions().position(gpsPosition).icon(BitmapDescriptorFactory.fromResource(R.drawable.android)));
+        searchResult();
         mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(gpsPosition, 15.5f));
         mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng latLng) {
-            mMap.clear();
-            mOnMyListener.onReceivedLatLng(latLng);
-            position.position(latLng);
-            mMap.addMarker(position);
+                mOnMyListener.onReceivedLatLng(latLng); //맵이동에 따른 메인액티비티 위치부분 텍스트 변환]
+                movePosition(latLng);
             }
         });
+        saveButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if(!positionName.getText().toString().isEmpty()) {
+                    mOnMyListener.onReceivedSavePosition(positionName);
+                }
+            }
+        });
+
     }
+
+    /**
+     *검색결과를 지도에 뿌려주는 메소드;
+     */
+    private  void searchResult(){
+        final Marker[] m;
+        Bundle extra = getArguments();//액티비티에서 전송한 데이터를 받아오는 객체
+        int size = extra.getInt("size");//검색된 수 만큼 좌표와 정보가져오기
+        //stores=new StoreInfo[size];
+        m= new Marker[size];
+
+        for(int i=0;i<size;i++){
+            m[i]=mMap.addMarker(new MarkerOptions()
+                    .position(new LatLng(extra.getDouble("lat"+i),extra.getDouble("lng"+i)))
+                    .title(extra.getString("n"+i))
+                    .alpha((extra.getFloat("g"+i)+2)/7f)//투명도
+                    .snippet(extra.getFloat("g"+i)+"점")
+                    .icon(BitmapDescriptorFactory.defaultMarker(15*(5-extra.getFloat("g"+i)))));
+        }
+    }
+
+    /**
+     * 현재 맵의 좌표를 이동시켜주는 메소드
+     * @param latLng
+     */
+    private void movePosition(LatLng latLng){//맵의 좌표를 이동
+         position.remove();
+        position=mMap.addMarker(new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.android)));
+           /*  mMap.clear();
+        mOnMyListener.onReceivedLatLng(latLng);
+        position.position(latLng);
+        mMap.addMarker(position);
+*/
+    }
+
+    /**
+     * 액티비티에서 위치검색시 이동을 위한 메소드
+     * @param latLng
+     */
+    public void changedPosition(LatLng latLng){
+        gpsPosition=latLng;
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(gpsPosition, 15.5f));
+        movePosition(latLng);
+    }
+
 }

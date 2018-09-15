@@ -100,7 +100,7 @@ public class SecondFragment extends Fragment implements OnMapReadyCallback {
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        //정문위치 lng127.7385 lat 37.8663
+        //정문위치 lat 37.8663 lng127.7385
         LatLng gpsPosition = new LatLng(37.869071, 127.742778);
         //StoreInfo stores[];
         final Marker[] m;
