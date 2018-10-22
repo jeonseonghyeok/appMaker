@@ -26,6 +26,7 @@ import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TabHost;
 import android.widget.TextView;
@@ -46,6 +47,7 @@ import java.net.URL;
 
 public class MainActivity extends AppCompatActivity implements GPSFinderFragment.OnMyListener{
     ViewPager vp;
+    LinearLayout ll;
     Button viewChangeButton,gpsFindButton;
     String[] tagList_Array,gpsList_Array;
     LatLng position;//현재위치를 가지고있는 객체
@@ -53,6 +55,8 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
     Bundle bundle;
     EditText tag;
     String myJSON;
+    TextView tab_list;
+    TextView tab_map ;
     InputMethodManager inputMethodManager;//키보드 사용유무를 관리하는 매니저
 
     private static final String TAG_ID = "id";
@@ -75,19 +79,60 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         tagSearch = (AutoCompleteTextView) findViewById(R.id.tagSearch);
         gps = new GpsInfo(MainActivity.this);
         vp = (ViewPager) findViewById(R.id.vp);//프래그먼트 보는 화면
-
+        ll = (LinearLayout)findViewById(R.id.ll);
         bundle = new Bundle();//액티비티에서 프래그먼트로 데이터전달을 위한 객체
         gpsMove(37.869071,127.742778);
         callPermission();// gps 권한 요청을 해야 함
         vp.setAdapter(new gpsPagerAdapter(getSupportFragmentManager()));
         gpsFindButton=  (Button)findViewById(R.id.gpsSearchButton);
         inputMethodManager = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);//키보드를 관리하는 매니저
-
+        tab_map=(TextView) findViewById(R.id.tab_map);
+        tab_list=(TextView) findViewById(R.id.tab_list);
+        tab_list.setOnClickListener(movePageListener);
+        tab_list.setTag(0);
+        tab_map.setOnClickListener(movePageListener);
+        tab_map.setTag(1);
+        tab_map.setSelected(true);
         //데이터베이스를 생성
         sqliteDB = init_database();
         init_tables() ;
         getTypes("http://210.115.48.131/getRestaurantType.php");//주소로 부터 가게대분류(타입)을 가져옴
-        createPositionList();//gpsSearch의 기능을 만들어줌 리스트목록을 넣어 선택가능하도록
+        showPositionList();//gpsSearch의 기능을 만들어줌 리스트목록을 넣어 선택가능하도록
+
+        vp.addOnPageChangeListener(new ViewPager.OnPageChangeListener()
+        {
+            @Override
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels)
+            {
+
+            }
+
+            @Override
+            public void onPageSelected(int position)
+            {
+                int i = 0;
+                while(i<2)
+                {
+                    if(position==i)
+                    {
+                        ll.findViewWithTag(i).setSelected(true);
+                    }
+                    else
+                    {
+                        ll.findViewWithTag(i).setSelected(false);
+                    }
+                    i++;
+                }
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state)
+            {
+
+            }
+        });
+
+
 
         //String sqlCreateTbl = "CREATE TABLE ORDER_T (NAME TEXT)" ;
         //sqliteDB.execSQL(sqlCreateTbl) ;
@@ -99,7 +144,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                 switch (actionId) {
                     case EditorInfo.IME_ACTION_SEARCH://엔터(검색)치면
                         //listSearch(tag.getText().toString());
-                        getData("http://210.115.48.131/store_getData.php");
+                        getData("http://210.115.48.131/getSearchResult.php");
                         inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(),0);
                         break;
                 }
@@ -107,7 +152,30 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
             }
         });*/
     }
+    View.OnClickListener movePageListener = new View.OnClickListener()
+    {
+        @Override
+        public void onClick(View v)
+        {
+            int tag = (int) v.getTag();
 
+            int i = 0;
+            while(i<2)
+            {
+                if(tag==i)
+                {
+                    ll.findViewWithTag(i).setSelected(true);
+                }
+                else
+                {
+                    ll.findViewWithTag(i).setSelected(false);
+                }
+                i++;
+            }
+
+            vp.setCurrentItem(tag);
+        }
+    };
 
     public void onReceivedLatLng(LatLng position){//GPSFinderFragment에서 좌표를 선택할 때
         inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(),0);
@@ -129,7 +197,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                 "FROM CONTACT_T " +
                 "WHERE NAME = '"+_positionName+"'";
         Cursor c=sqliteDB.rawQuery(sqlSelect,null);
-       if(!isChunCheon(position.latitude,position.longitude)){
+       if(!isChunCheon(position.latitude,position.longitude)){//춘천이 아니면 저장불가
            alertDialogBuilder.setMessage("이 장소는 지원하지않는 장소입니다.");
            alertDialogBuilder.setPositiveButton("확인",
                    new DialogInterface.OnClickListener() {
@@ -139,7 +207,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                        }
                    });
        }
-        else if(c.getCount()!=0) {
+        else if(c.getCount()!=0) {//이미 존재하는 이름이면 저장불가
            alertDialogBuilder.setMessage("장소 '" + _positionName + "'는 이미 존재하는 주소명입니다.");
            alertDialogBuilder.setPositiveButton("확인",
                    new DialogInterface.OnClickListener() {
@@ -170,7 +238,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                            sqliteDB.execSQL(sqlInsert);
                            Toast.makeText(MainActivity.this, "장소 '" + _positionName + "'(이)가 저장되었습니다.", Toast.LENGTH_SHORT).show();
                            positionName.setText(null);
-                           createPositionList();//리스트를 다시만들어 어댑터로 연결
+                           showPositionList();//장소리스트를 다시만들어 어댑터로 연결
                            inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(),0);
                        }
                    });
@@ -186,73 +254,6 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         alertDialog.show();
 
 
-
-    }
-    private void createPositionList(){
-        Cursor cursor = sqliteDB.rawQuery("select NAME from CONTACT_T",null);
-        gpsList_Array =new String[4+cursor.getCount()];
-
-        gpsList_Array[0]="서버:강원대 정문";
-        gpsList_Array[1]="서버:남춘천";
-        gpsList_Array[2]="서버:강원대 후문";
-        gpsList_Array[3]="서버:명동";
-        int i=4;
-        while( cursor.moveToNext() ) {
-            gpsList_Array[i++]=cursor.getString(0);
-        }
-        gpsSearch.setThreshold(1);//문자 개수를 매개변수값 이상 입력하여야 실행됨(매개변수를 0이하로 주어도 1자 이상)
-        gpsSearch.setAdapter(new ArrayAdapter<String>(this,android.R.layout.select_dialog_item, gpsList_Array));
-        gpsSearch.setSingleLine();
-        gpsSearch.setOnTouchListener(new View.OnTouchListener(){
-            @Override
-            public boolean onTouch(View v, MotionEvent event){
-                if(gpsSearch.getText().length()>0)
-                    gpsSearch.setText("");
-                else
-                    gpsSearch.showDropDown();
-                return false;
-            }
-        });
-        gpsSearch.setOnItemClickListener(new AdapterView.OnItemClickListener() {//위치검색결과에서 선택시
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, int index, long id) {
-                ListView listView = (ListView) parent;
-                String item = (String) listView.getItemAtPosition(index);//결과리스트 순서에서의 포지션
-                //Toast.makeText(getApplicationContext(), item, Toast.LENGTH_LONG).show();
-                String sqlSelect = "SELECT * " +
-                        "FROM CONTACT_T " +
-                        "WHERE NAME = '"+item+"'";
-                Cursor c=sqliteDB.rawQuery(sqlSelect,null);
-                if(c.moveToFirst()) {//커서를 처음으로 이동시켜야 한다.
-                    gpsMove(c.getDouble(1),c.getDouble(2));
-                    GPSFinderFragment gpsFragment = (GPSFinderFragment)getSupportFragmentManager().findFragmentById(R.id.vp);
-                    gpsFragment.changedPosition(position);
-                    vp.setCurrentItem(1);
-                    //vp.setAdapter(new gpsPagerAdapter(getSupportFragmentManager()));//맵을 새로 세팅
-                }
-                inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(),0);
-            }
-        });
-        //현재위치찾기 버튼을 눌렀을때
-        gpsFindButton.setOnClickListener(new OnClickListener() {
-            public void onClick(View arg0) {
-                bundle = new Bundle();//액티비티에서 프래그먼트로 데이터전달을 위한 객체
-                gps = new GpsInfo(MainActivity.this);
-                // GPS 사용유무 가져오기
-                GPSFinderFragment gpsFragment = (GPSFinderFragment)getSupportFragmentManager().findFragmentById(R.id.vp);
-                if (gps.isGetLocation() && isChunCheon(gps.getLatitude(),gps.getLongitude())) {//사용가능할때&&춘천일때
-                    gpsMove(gps.getLatitude(),gps.getLongitude());
-                    gpsSearch.setText("현재 위치");
-                    vp.setCurrentItem(1);
-                } else {
-                    gpsSearch.setText("직접설정(GPS사용불가)");
-                    gpsMove(37.869071,127.742778);
-                    // GPS 를 사용할수 없으므로 기본위치에서
-                }
-                gpsFragment.changedPosition(position);
-                inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(),0);
-            }
-        });
 
     }
     private void init_tables() {
@@ -380,24 +381,167 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
             // GPS 를 사용할수 없으므로 기본위치에서
         }
     }
-    private void listSearch(String tag) {
 
-        StoreInfo stores[] = new StoreInfo[5];
-        stores[0] = new StoreInfo(new LatLng(37.8730, 127.7445), tag + "정문", 5.0f);
-        stores[1] = new StoreInfo(new LatLng(37.8730, 127.7450), tag + "돌돌삼겹살", 4.0f);
-        stores[2] = new StoreInfo(new LatLng(37.8730, 127.7455), tag + "곱돌", 3.0f);
-        stores[3] = new StoreInfo(new LatLng(37.8730, 127.7460), tag + "여진소", 2.0f);
-        stores[4] = new StoreInfo(new LatLng(37.8730, 127.7465), tag + "손문", 1.0f);
-        bundle.putInt("size", stores.length);
-        for (int i = 0; i < stores.length; i++) {
-            bundle.putFloat("g" + i, stores[i].grade);
-            bundle.putString("n" + i, stores[i].name);
-            bundle.putDouble("lat" + i, stores[i].gpsPosition.latitude);
-            bundle.putDouble("lng" + i, stores[i].gpsPosition.longitude);
+    protected void showPositionList(){
+        Cursor cursor = sqliteDB.rawQuery("select NAME from CONTACT_T",null);
+        gpsList_Array =new String[cursor.getCount()];
+        int i=0;
+        while( cursor.moveToNext() ) {
+            gpsList_Array[i++]=cursor.getString(0);
         }
-        vp.setAdapter(new searchResultPagerAdapter(getSupportFragmentManager()));
+        gpsSearch.setThreshold(1);//문자 개수를 매개변수값 이상 입력하여야 실행됨(매개변수를 0이하로 주어도 1자 이상)
+        gpsSearch.setAdapter(new ArrayAdapter<String>(this,android.R.layout.select_dialog_item, gpsList_Array));
+        gpsSearch.setSingleLine();
+        gpsSearch.setOnTouchListener(new View.OnTouchListener(){
+            @Override
+            public boolean onTouch(View v, MotionEvent event){
+                if(gpsSearch.getText().length()>0)
+                    gpsSearch.setText("");
+                else
+                    gpsSearch.showDropDown();
+                return false;
+            }
+        });
+        gpsSearch.setOnItemClickListener(new AdapterView.OnItemClickListener() {//위치검색결과에서 선택시
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int index, long id) {
+                ListView listView = (ListView) parent;
+                String item = (String) listView.getItemAtPosition(index);//결과리스트 순서에서의 포지션
+                //Toast.makeText(getApplicationContext(), item, Toast.LENGTH_LONG).show();
+                String sqlSelect = "SELECT * " +
+                        "FROM CONTACT_T " +
+                        "WHERE NAME = '"+item+"'";
+                Cursor c=sqliteDB.rawQuery(sqlSelect,null);
+                if(c.moveToFirst()) {//커서를 처음으로 이동시켜야 한다.
+                    gpsMove(c.getDouble(1),c.getDouble(2));
+                    GPSFinderFragment gpsFragment = (GPSFinderFragment)getSupportFragmentManager().findFragmentById(R.id.vp);
+                    gpsFragment.changedPosition(position);
+                    vp.setCurrentItem(1);
+                    //vp.setAdapter(new gpsPagerAdapter(getSupportFragmentManager()));//맵을 새로 세팅
+                }
+                inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(),0);
+            }
+        });
+        //현재위치찾기 버튼을 눌렀을때
+        gpsFindButton.setOnClickListener(new OnClickListener() {
+            public void onClick(View arg0) {
+                bundle = new Bundle();//액티비티에서 프래그먼트로 데이터전달을 위한 객체
+                gps = new GpsInfo(MainActivity.this);
+                // GPS 사용유무 가져오기
+                GPSFinderFragment gpsFragment = (GPSFinderFragment)getSupportFragmentManager().findFragmentById(R.id.vp);
+                if (gps.isGetLocation() && isChunCheon(gps.getLatitude(),gps.getLongitude())) {//사용가능할때&&춘천일때
+                    gpsMove(gps.getLatitude(),gps.getLongitude());
+                    gpsSearch.setText("현재 위치");
+                    vp.setCurrentItem(1);
+                } else {
+                    gpsSearch.setText("직접설정(GPS사용불가)");
+                    gpsMove(37.869071,127.742778);
+                    // GPS 를 사용할수 없으므로 기본위치에서
+                }
+                gpsFragment.changedPosition(position);
+                inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(),0);
+            }
+        });
+
     }
 
+    /**
+     * 검색제안목록(서버의 데이터)을 제공하는 메소드
+     */
+
+    public void getTypes(String url) {
+
+        class GetDataJSON extends AsyncTask<String, Void, String> {
+            @Override
+            protected String doInBackground(String... params) {
+                String uri = params[0];
+
+                BufferedReader bufferedReader = null;
+                try {
+                    URL url = new URL(uri);
+                    HttpURLConnection con = (HttpURLConnection) url.openConnection();
+                    StringBuilder sb = new StringBuilder();
+                    bufferedReader = new BufferedReader(new InputStreamReader(con.getInputStream()));
+
+                    String json;
+                    while ((json = bufferedReader.readLine()) != null) {
+                        sb.append(json + "\n");
+                    }
+                    return sb.toString().trim();
+                } catch (Exception e) {
+                    return null;
+                }
+            }
+
+            @Override
+            protected void onPostExecute(String result) {
+                myJSON = result;
+                showTypeList();
+            }
+        }
+
+        GetDataJSON g = new GetDataJSON();
+        g.execute(url);
+
+    }
+    protected void showTypeList() {
+        try {
+            JSONObject jsonObj = new JSONObject(myJSON);
+            JSONArray types = jsonObj.getJSONArray("result");//데이터집합의 이름
+            //Log.d("logcatch", types.length()+"showList: 4011line");
+            tagList_Array=new String[types.length()];
+            for (int i = 0; i < types.length(); i++) {
+                JSONObject c = types.getJSONObject(i);
+                tagList_Array[i]=c.getString("rtype");
+            }
+            tagSearch.setThreshold(1);//문자 개수를 매개변수값 이상 입력하여야 실행됨(매개변수를 0이하로 주어도 1자 이상)
+            tagSearch.setAdapter(new ArrayAdapter<String>(this,android.R.layout.select_dialog_item, tagList_Array));
+            tagSearch.setSingleLine();
+            tagSearch.setOnTouchListener(new View.OnTouchListener(){
+                @Override
+                public boolean onTouch(View v, MotionEvent event){
+                    if(tagSearch.getText().length()>0)
+                        tagSearch.setText("");
+                    else
+                        tagSearch.showDropDown();
+                    return false;
+                }
+            });
+            tagSearch.setOnItemClickListener(new AdapterView.OnItemClickListener() {//태그검색결과에서 선택시
+                @Override
+                public void onItemClick(AdapterView<?> parent, View view, int index, long id) {
+                    ListView listView = (ListView) parent;
+                    String rtype = (String) listView.getItemAtPosition(index);//결과리스트 순서에서의 포지션
+                    getData("http://210.115.48.131/getSearchResult.php?search="+rtype);
+                    inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(),0);
+                    tab_list.callOnClick();
+                }
+            });
+            tagSearch.setOnEditorActionListener(new EditText.OnEditorActionListener() {
+                @Override
+                public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                    switch (actionId) {
+                        case EditorInfo.IME_ACTION_SEARCH://태그엔터(검색)치면
+                            getData("http://210.115.48.131/getSearchResult.php?search="+tagSearch.getText());
+                            inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(), 0);
+                            tab_list.setSelected(true);
+                            tab_list.callOnClick();
+                            break;
+                    }
+                    return true;
+                }
+            });
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+    }
+    //현재위치를 확인하여 프래그먼트가 처음만들어질때 위치 알려주기위한 메소드
+    private void gpsMove(double lat,double lng){
+        bundle.putDouble("GPSLat", lat);
+        bundle.putDouble("GPSLng", lng);
+        position=new LatLng(lat,lng);
+    }
     /**
      * 검색리스트정보를 보내주는 메소드
      */
@@ -430,129 +574,44 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
             @Override
             protected void onPostExecute(String result) {
                 myJSON = result;
-                showList();
+                showRestaurantList();
+            }
+
+            @Override
+            protected void onCancelled() {
+                super.onCancelled();
+                Toast.makeText(MainActivity.this, "ddd.", Toast.LENGTH_SHORT).show();
+
             }
         }
         GetDataJSON g = new GetDataJSON();
         g.execute(url);
 
     }
-    protected void showList() {
+    protected void showRestaurantList() {
         try {
             JSONObject jsonObj = new JSONObject(myJSON);
             restaurants = jsonObj.getJSONArray("result");//데이터집합의 이름
-            bundle.putInt("size", restaurants.length());
-            //   Log.d("logcatch", "showList: 4011line");
-            for (int i = 0; i < restaurants.length(); i++) {
-                JSONObject c = restaurants.getJSONObject(i);
-                //String id = c.getString(TAG_ID);
-                bundle.putFloat("g" + i, 4.0f);
-                bundle.putString("n" + i, c.getString("rname"));
-                bundle.putDouble("lat" + i, c.getDouble("rgps_lat"));
-                bundle.putDouble("lng" + i,c.getDouble( "rgps_lng"));
+            int searchResult= restaurants.length();
+            if(searchResult>0) {
+                bundle.putInt("size", searchResult);
+                //   Log.d("logcatch", "showList: 4011line");
+                for (int i = 0; i < restaurants.length(); i++) {
+                    JSONObject c = restaurants.getJSONObject(i);
+                    //String id = c.getString(TAG_ID);
+                    bundle.putString("n" + i, c.getString("rname"));
+                    bundle.putDouble("lat" + i, c.getDouble("rgps_lat"));
+                    bundle.putDouble("lng" + i, c.getDouble("rgps_lng"));
+                    bundle.putFloat("g" + i, (float) c.getDouble("rrga"));
+                }
 
+                vp.setAdapter(new searchResultPagerAdapter(getSupportFragmentManager()));
             }
-            vp.setAdapter(new searchResultPagerAdapter(getSupportFragmentManager()));
+
         } catch (JSONException e) {
             e.printStackTrace();
         }
 
-    }
-
-
-    /**
-     * 검색리스트정보를 보내주는 메소드
-     */
-
-    public void getTypes(String url) {
-
-        class GetDataJSON extends AsyncTask<String, Void, String> {
-            @Override
-            protected String doInBackground(String... params) {
-                String uri = params[0];
-
-                BufferedReader bufferedReader = null;
-                try {
-                    URL url = new URL(uri);
-                    HttpURLConnection con = (HttpURLConnection) url.openConnection();
-                    StringBuilder sb = new StringBuilder();
-                    bufferedReader = new BufferedReader(new InputStreamReader(con.getInputStream()));
-
-                    String json;
-                    while ((json = bufferedReader.readLine()) != null) {
-                        sb.append(json + "\n");
-                    }
-                    return sb.toString().trim();
-                } catch (Exception e) {
-                    return null;
-                }
-            }
-
-            @Override
-            protected void onPostExecute(String result) {
-                myJSON = result;
-                showTypes();
-            }
-        }
-
-        GetDataJSON g = new GetDataJSON();
-        g.execute(url);
-
-    }
-    protected void showTypes() {
-        try {
-            JSONObject jsonObj = new JSONObject(myJSON);
-            JSONArray types = jsonObj.getJSONArray("result");//데이터집합의 이름
-            //Log.d("logcatch", types.length()+"showList: 4011line");
-            tagList_Array=new String[types.length()];
-            for (int i = 0; i < types.length(); i++) {
-                JSONObject c = types.getJSONObject(i);
-                tagList_Array[i]=c.getString("rtype");
-            }
-            tagSearch.setThreshold(1);//문자 개수를 매개변수값 이상 입력하여야 실행됨(매개변수를 0이하로 주어도 1자 이상)
-            tagSearch.setAdapter(new ArrayAdapter<String>(this,android.R.layout.select_dialog_item, tagList_Array));
-            tagSearch.setSingleLine();
-            tagSearch.setOnTouchListener(new View.OnTouchListener(){
-                @Override
-                public boolean onTouch(View v, MotionEvent event){
-                    if(tagSearch.getText().length()>0)
-                        tagSearch.setText("");
-                    else
-                        tagSearch.showDropDown();
-                    return false;
-                }
-            });
-            tagSearch.setOnItemClickListener(new AdapterView.OnItemClickListener() {//태그검색결과에서 선택시
-                @Override
-                public void onItemClick(AdapterView<?> parent, View view, int index, long id) {
-                    ListView listView = (ListView) parent;
-                    String rtype = (String) listView.getItemAtPosition(index);//결과리스트 순서에서의 포지션
-                    getData("http://210.115.48.131/store_getData.php");
-                    inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(),0);
-                }
-            });
-            tagSearch.setOnEditorActionListener(new EditText.OnEditorActionListener() {
-                @Override
-                public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                    switch (actionId) {
-                        case EditorInfo.IME_ACTION_SEARCH://태그엔터(검색)치면
-                            getData("http://210.115.48.131/store_getData.php");
-                            inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(), 0);
-                            break;
-                    }
-                    return true;
-                }
-            });
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-
-    }
-    //현재위치를 확인하여 프래그먼트가 처음만들어질때 위치 알려주기위한 메소드
-    private void gpsMove(double lat,double lng){
-        bundle.putDouble("GPSLat", lat);
-        bundle.putDouble("GPSLng", lng);
-        position=new LatLng(lat,lng);
     }
 }
 
