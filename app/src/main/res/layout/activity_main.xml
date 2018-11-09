@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:orientation="vertical">
 
 
     <LinearLayout
@@ -9,134 +12,177 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#ccc"
-        android:orientation="horizontal">
-
-        <LinearLayout
-            android:id="@+id/serch"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
             android:orientation="vertical">
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:layout_weight="1"
+                android:layout_height="45dp"
                 android:orientation="horizontal">
 
                 <TextView
                     android:id="@+id/gps"
-                    android:layout_width="80dp"
-                    android:layout_height="match_parent"
-                    android:layout_weight="0"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
                     android:gravity="center"
-                    android:text="위치"
-                    android:textSize="20dp" />
+                    android:text="@string/pos"
+                    android:textSize="20sp" />
 
                 <AutoCompleteTextView
                     android:id="@+id/gpsSearch"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:layout_weight="1" />
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="3"
+                    android:textSize="20sp" />
 
                 <Button
                     android:id="@+id/gpsSearchButton"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    android:layout_weight="0"
                     android:background="@drawable/gps" />
 
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:layout_weight="1"
+                android:layout_height="45dp"
                 android:orientation="horizontal">
 
                 <TextView
                     android:id="@+id/textView5"
-                    android:layout_width="80dp"
+                    android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_weight="0"
+                    android:layout_weight="0.3"
                     android:gravity="center"
-                    android:text="태그"
-                    android:textSize="20dp" />
+                    android:text="@string/tag"
+                    android:textSize="20sp" />
 
                 <AutoCompleteTextView
                     android:id="@+id/tagSearch"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
                     android:ems="10"
-                    android:hint="빠른길"
                     android:imeOptions="actionSearch"
-                    android:inputType="text" />
+                    android:inputType="text"
+                    android:textSize="20sp" />
 
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="60px"
-                android:layout_weight="1"
+                android:layout_height="25dp"
                 android:orientation="horizontal">
 
                 <TextView
                     android:id="@+id/tab_list"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
                     android:background="@drawable/tab_bg_selector"
                     android:gravity="center"
-                    android:text="리스트"
+                    android:text="@string/list"
                     android:textColor="@drawable/tab_color_selector" />
 
                 <TextView
                     android:id="@+id/tab_map"
-                    android:layout_width="match_parent"
+                    android:layout_width="0dp"
                     android:layout_height="match_parent"
                     android:layout_weight="1"
                     android:background="@drawable/tab_bg_selector"
                     android:gravity="center"
-                    android:text="지도"
+                    android:text="@string/map"
                     android:textColor="@drawable/tab_color_selector" />
 
-            </LinearLayout>
         </LinearLayout>
-
     </LinearLayout>
 
-    <android.support.v4.view.ViewPager
-        android:id="@+id/vp"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@id/ll"
-        android:layout_marginBottom="50px" />
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <android.support.v4.view.ViewPager
+            android:id="@+id/vp"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_alignParentStart="true"
+            android:layout_alignParentLeft="true"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentEnd="true"
+            android:layout_alignParentRight="true"
+            android:layout_alignParentBottom="true"
+            android:layout_marginStart="0dp"
+            android:layout_marginEnd="0dp" />
+
+    </FrameLayout>
 
     <LinearLayout
-        android:id="@+id/log"
+        android:id="@+id/strt_info"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:background="#8C8C8C"
-        android:orientation="horizontal">
+        android:layout_height="130dp"
+        android:layout_marginBottom="0dp"
+        android:orientation="vertical"
+        android:visibility="visible">
 
-        <TextView
-            android:id="@+id/tab_third"
-            android:layout_width="0dip"
-            android:layout_height="30dp"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="신규추가" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
 
-        <TextView
-            android:layout_width="0dip"
-            android:layout_height="30dp"
-            android:layout_weight="1"
-            android:gravity="center"
-            android:text="MY로그" />
+            <TextView
+                android:id="@+id/strt_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="TextView"
+                android:textSize="20sp" />
+        </LinearLayout>
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="bottom"
+            android:orientation="horizontal"
+            android:padding="10dp">
+
+            <RatingBar
+                android:id="@+id/ratingBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:numStars="5"
+                android:rating="0"
+                android:stepSize="0.5" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <Button
+                    android:id="@+id/button2"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:text="Button" />
+
+                <Button
+                    android:id="@+id/button"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:text="Button" />
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/imageButton"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                app:srcCompat="@color/common_google_signin_btn_text_light_pressed" />
+        </LinearLayout>
     </LinearLayout>
 
 
-</RelativeLayout>
+</LinearLayout>

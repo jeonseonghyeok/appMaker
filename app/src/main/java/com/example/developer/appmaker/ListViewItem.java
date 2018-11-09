@@ -4,23 +4,23 @@ import android.graphics.drawable.Drawable;
 
 public class ListViewItem {
     private Drawable iconDrawable;
-    private String titleStr;
-    private String descStr;
-    ListViewItem(Drawable icon, String title, String desc){
+    private String restaurantName;
+    private String restaurantGrade;
+    ListViewItem(Drawable icon, String restaurantName, String restaurantGrade){
         this.iconDrawable=icon;
-        this.titleStr=title;
-        this.descStr=desc;
+        this.restaurantName=restaurantName;
+        this.restaurantGrade=restaurantGrade;
     }
     public void setIcon(Drawable icon) {
         iconDrawable = icon;
     }
 
-    public void setTitle(String title) {
-        titleStr = title;
+    public void setTitle(String restaurantName) {
+        this.restaurantName = restaurantName;
     }
 
-    public void setDesc(String desc) {
-        descStr = desc;
+    public void setDesc(String restaurantGrade) {
+        this.restaurantGrade = restaurantGrade;
     }
 
     public Drawable getIcon() {
@@ -28,11 +28,11 @@ public class ListViewItem {
     }
 
     public String getTitle() {
-        return this.titleStr;
+        return this.restaurantName;
     }
 
     public String getDesc() {
-        return this.descStr;
+        return this.restaurantGrade;
     }
 }
 

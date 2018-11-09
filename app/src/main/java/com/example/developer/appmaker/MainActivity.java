@@ -8,6 +8,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.os.AsyncTask;
 import android.os.Build;
+import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
@@ -19,6 +20,7 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
@@ -45,7 +47,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 
-public class MainActivity extends AppCompatActivity implements GPSFinderFragment.OnMyListener{
+public class MainActivity extends AppCompatActivity implements GPSFinderFragment.GPSListener, FirstFragment.OnMyListener{
     ViewPager vp;
     LinearLayout ll;
     Button viewChangeButton,gpsFindButton;
@@ -57,7 +59,10 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
     String myJSON;
     TextView tab_list;
     TextView tab_map ;
+    LinearLayout strt_info;
+    TextView strt_name;//선택된(selected)가게(restaurant) 이름(name)
     InputMethodManager inputMethodManager;//키보드 사용유무를 관리하는 매니저
+    boolean isEmptyList;
 
     private static final String TAG_ID = "id";
     private static final String TAG_ADD = "address";
@@ -80,6 +85,8 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         gps = new GpsInfo(MainActivity.this);
         vp = (ViewPager) findViewById(R.id.vp);//프래그먼트 보는 화면
         ll = (LinearLayout)findViewById(R.id.ll);
+        strt_info = (LinearLayout)findViewById(R.id.strt_info);
+        strt_name = (TextView)  findViewById(R.id.strt_name);
         bundle = new Bundle();//액티비티에서 프래그먼트로 데이터전달을 위한 객체
         gpsMove(37.869071,127.742778);
         callPermission();// gps 권한 요청을 해야 함
@@ -93,12 +100,16 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         tab_map.setOnClickListener(movePageListener);
         tab_map.setTag(1);
         tab_map.setSelected(true);
+        isEmptyList=true;//검색 전 검색결과 리스트 존재하지않음
+
         //데이터베이스를 생성
         sqliteDB = init_database();
         init_tables() ;
         getTypes("http://210.115.48.131/getRestaurantType.php");//주소로 부터 가게대분류(타입)을 가져옴
         showPositionList();//gpsSearch의 기능을 만들어줌 리스트목록을 넣어 선택가능하도록
-
+/**
+ * viewpager에 대한 리스너
+ */
         vp.addOnPageChangeListener(new ViewPager.OnPageChangeListener()
         {
             @Override
@@ -111,17 +122,15 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
             public void onPageSelected(int position)
             {
                 int i = 0;
-                while(i<2)
-                {
-                    if(position==i)
-                    {
-                        ll.findViewWithTag(i).setSelected(true);
+                if(!isEmptyList) {
+                    while (i < 2) {
+                        if (position == i) {
+                            ll.findViewWithTag(i).setSelected(true);
+                        } else {
+                            ll.findViewWithTag(i).setSelected(false);
+                        }
+                        i++;
                     }
-                    else
-                    {
-                        ll.findViewWithTag(i).setSelected(false);
-                    }
-                    i++;
                 }
             }
 
@@ -132,27 +141,12 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
             }
         });
 
-
-
-        //String sqlCreateTbl = "CREATE TABLE ORDER_T (NAME TEXT)" ;
-        //sqliteDB.execSQL(sqlCreateTbl) ;
-
-
-        /*tagSearch.setOnEditorActionListener(new EditText.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                switch (actionId) {
-                    case EditorInfo.IME_ACTION_SEARCH://엔터(검색)치면
-                        //listSearch(tag.getText().toString());
-                        getData("http://210.115.48.131/getSearchResult.php");
-                        inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(),0);
-                        break;
-                }
-                return true;
-            }
-        });*/
     }
-    View.OnClickListener movePageListener = new View.OnClickListener()
+
+    /**
+     * 탭 클릭에 대해 화면변환 리스너
+     */
+    OnClickListener movePageListener = new OnClickListener()
     {
         @Override
         public void onClick(View v)
@@ -160,19 +154,16 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
             int tag = (int) v.getTag();
 
             int i = 0;
-            while(i<2)
-            {
-                if(tag==i)
-                {
-                    ll.findViewWithTag(i).setSelected(true);
+            if(!isEmptyList) {
+                while (i < 2) {
+                    if (tag == i) {
+                        ll.findViewWithTag(i).setSelected(true);
+                    } else {
+                        ll.findViewWithTag(i).setSelected(false);
+                    }
+                    i++;
                 }
-                else
-                {
-                    ll.findViewWithTag(i).setSelected(false);
-                }
-                i++;
             }
-
             vp.setCurrentItem(tag);
         }
     };
@@ -322,7 +313,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         }
 
         @Override
-        public android.support.v4.app.Fragment getItem(int select) {
+        public Fragment getItem(int select) {
             Fragment rFragment;
             switch (select) {
                 case 0: {
@@ -351,7 +342,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         }
 
         @Override
-        public android.support.v4.app.Fragment getItem(int select) {
+        public Fragment getItem(int select) {
             switch (select) {
                 case 0: {
                     Fragment rFragment = new GPSFinderFragment();
@@ -395,6 +386,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         gpsSearch.setOnTouchListener(new View.OnTouchListener(){
             @Override
             public boolean onTouch(View v, MotionEvent event){
+                RestaurantInfoClose();
                 if(gpsSearch.getText().length()>0)
                     gpsSearch.setText("");
                 else
@@ -417,7 +409,6 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                     GPSFinderFragment gpsFragment = (GPSFinderFragment)getSupportFragmentManager().findFragmentById(R.id.vp);
                     gpsFragment.changedPosition(position);
                     vp.setCurrentItem(1);
-                    //vp.setAdapter(new gpsPagerAdapter(getSupportFragmentManager()));//맵을 새로 세팅
                 }
                 inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(),0);
             }
@@ -425,7 +416,6 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         //현재위치찾기 버튼을 눌렀을때
         gpsFindButton.setOnClickListener(new OnClickListener() {
             public void onClick(View arg0) {
-                bundle = new Bundle();//액티비티에서 프래그먼트로 데이터전달을 위한 객체
                 gps = new GpsInfo(MainActivity.this);
                 // GPS 사용유무 가져오기
                 GPSFinderFragment gpsFragment = (GPSFinderFragment)getSupportFragmentManager().findFragmentById(R.id.vp);
@@ -500,6 +490,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
             tagSearch.setOnTouchListener(new View.OnTouchListener(){
                 @Override
                 public boolean onTouch(View v, MotionEvent event){
+                    RestaurantInfoClose();
                     if(tagSearch.getText().length()>0)
                         tagSearch.setText("");
                     else
@@ -513,6 +504,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                     ListView listView = (ListView) parent;
                     String rtype = (String) listView.getItemAtPosition(index);//결과리스트 순서에서의 포지션
                     getData("http://210.115.48.131/getSearchResult.php?search="+rtype);
+                    isEmptyList=false;//검색동작으로 리스트생성됨을 알림
                     inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(),0);
                     tab_list.callOnClick();
                 }
@@ -523,8 +515,9 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                     switch (actionId) {
                         case EditorInfo.IME_ACTION_SEARCH://태그엔터(검색)치면
                             getData("http://210.115.48.131/getSearchResult.php?search="+tagSearch.getText());
+                            isEmptyList=false;//검색동작으로 리스트생성됨을 알림
                             inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(), 0);
-                            tab_list.setSelected(true);
+                           // tab_list.setSelected(true);
                             tab_list.callOnClick();
                             break;
                     }
@@ -536,7 +529,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         }
 
     }
-    //현재위치를 확인하여 프래그먼트가 처음만들어질때 위치 알려주기위한 메소드
+    //좌표이동 메소드
     private void gpsMove(double lat,double lng){
         bundle.putDouble("GPSLat", lat);
         bundle.putDouble("GPSLng", lng);
@@ -596,9 +589,10 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
             if(searchResult>0) {
                 bundle.putInt("size", searchResult);
                 //   Log.d("logcatch", "showList: 4011line");
-                for (int i = 0; i < restaurants.length(); i++) {
-                    JSONObject c = restaurants.getJSONObject(i);
+                for (int i = 1; i <= restaurants.length(); i++) {
+                    JSONObject c = restaurants.getJSONObject(i-1);
                     //String id = c.getString(TAG_ID);
+                    bundle.putInt("m"+i,c.getInt("rcode"));//맵의 마커와 검색결과의 code를 매칭
                     bundle.putString("n" + i, c.getString("rname"));
                     bundle.putDouble("lat" + i, c.getDouble("rgps_lat"));
                     bundle.putDouble("lng" + i, c.getDouble("rgps_lng"));
@@ -611,6 +605,26 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         } catch (JSONException e) {
             e.printStackTrace();
         }
+
+    }
+    @Override
+    //리스트 프레그먼트에서 가게명을 클릭시 맵프레크먼트에서 동작
+    public void selectedRestaurant(int index){
+        GPSFinderFragment gpsFragment = (GPSFinderFragment)getSupportFragmentManager().findFragmentById(R.id.vp);
+        gpsFragment.goToRestaurant(index);
+        vp.setCurrentItem(1);
+        RestaurantInfoOpen(index);
+        //Log.d("getData", "selectedRestaurant: "+index);
+    }
+    //가게정보를 띄우는 메소드
+    public void RestaurantInfoOpen(int index){
+        strt_name.setText(bundle.getString("n"+(index+1)));
+      //  strt_info.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,300));
+        strt_info.setVisibility(View.VISIBLE);
+    }
+    //가게정보를 숨기는 메소드
+    public void RestaurantInfoClose(){
+        strt_info.setVisibility(View.GONE);
 
     }
 }
