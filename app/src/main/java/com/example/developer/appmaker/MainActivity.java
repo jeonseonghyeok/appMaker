@@ -1,6 +1,8 @@
 package com.example.developer.appmaker;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
+import android.app.Dialog;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -15,12 +17,10 @@ import android.support.v4.view.ViewPager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.view.ViewGroup;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.AdapterView;
@@ -28,9 +28,10 @@ import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.TabHost;
+import android.widget.RatingBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -50,7 +51,9 @@ import java.net.URL;
 public class MainActivity extends AppCompatActivity implements GPSFinderFragment.GPSListener, FirstFragment.OnMyListener{
     ViewPager vp;
     LinearLayout ll;
-    Button viewChangeButton,gpsFindButton;
+    Button gpsFindButton,bt_downGrade,bt_upGrade,bt_reviewConfirm,bt_reviewCancel;
+    ImageButton bt_review;
+    RatingBar ratingBar;
     String[] tagList_Array,gpsList_Array;
     LatLng position;//현재위치를 가지고있는 객체
     AutoCompleteTextView tagSearch,gpsSearch;
@@ -59,7 +62,8 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
     String myJSON;
     TextView tab_list;
     TextView tab_map ;
-    LinearLayout strt_info;
+    LinearLayout strt_info;//가게정보를 띄워주는 화면//초기에 평가만 올리면 상세정보
+    Dialog dialog;//리뷰를 위한 다이얼로그
     TextView strt_name;//선택된(selected)가게(restaurant) 이름(name)
     InputMethodManager inputMethodManager;//키보드 사용유무를 관리하는 매니저
     boolean isEmptyList;
@@ -73,6 +77,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
     private final int PERMISSIONS_ACCESS_COARSE_LOCATION = 1001;
     SQLiteDatabase sqliteDB;
 
+    @SuppressLint("WrongViewCast")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -101,48 +106,89 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         tab_map.setTag(1);
         tab_map.setSelected(true);
         isEmptyList=true;//검색 전 검색결과 리스트 존재하지않음
-
+        bt_upGrade= (Button)findViewById(R.id.bt_upGrade);
+        bt_downGrade= (Button)findViewById(R.id.bt_downGrade);
+        bt_review=(ImageButton)findViewById(R.id.bt_review);
+        ratingBar= (RatingBar)findViewById(R.id.ratingBar);
         //데이터베이스를 생성
         sqliteDB = init_database();
         init_tables() ;
         getTypes("http://210.115.48.131/getRestaurantType.php");//주소로 부터 가게대분류(타입)을 가져옴
         showPositionList();//gpsSearch의 기능을 만들어줌 리스트목록을 넣어 선택가능하도록
-/**
- * viewpager에 대한 리스너
- */
-        vp.addOnPageChangeListener(new ViewPager.OnPageChangeListener()
-        {
-            @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels)
-            {
 
-            }
-
-            @Override
-            public void onPageSelected(int position)
-            {
-                int i = 0;
-                if(!isEmptyList) {
-                    while (i < 2) {
-                        if (position == i) {
-                            ll.findViewWithTag(i).setSelected(true);
-                        } else {
-                            ll.findViewWithTag(i).setSelected(false);
-                        }
-                        i++;
-                    }
-                }
-            }
-
-            @Override
-            public void onPageScrollStateChanged(int state)
-            {
-
-            }
-        });
+        vp.addOnPageChangeListener(pageChangeListener);
+        bt_upGrade.setOnClickListener(upGradeListener);
+        dialog=new Dialog(this);
+        bt_downGrade.setOnClickListener(downGradeListener);
+        bt_review.setOnClickListener(reviewBTListener);
 
     }
 
+
+
+    /**
+     * 리뷰를 등록하는 다이얼로그를 띄워주는 메소드
+     */
+    OnClickListener reviewBTListener = new OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            ReviewDialog reviewDialog = new ReviewDialog(MainActivity.this);//리뷰다이얼로그를 생성한다.
+            reviewDialog.callFunction(strt_info);
+
+        }
+    };
+
+    /**
+     * 점수를 올려주는 기능의 리스터
+     */
+    OnClickListener upGradeListener = new OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            ratingBar.setRating(ratingBar.getRating()+0.5f);
+        }
+    };
+    /**
+     * 점수를 내려주는 기능의 리스터
+     */
+    OnClickListener downGradeListener = new OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            ratingBar.setRating(ratingBar.getRating()-0.5f);
+        }
+    };
+    ViewPager.OnPageChangeListener pageChangeListener=new ViewPager.OnPageChangeListener()
+    {
+        @Override
+        public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels)
+        {
+
+        }
+
+        @Override
+        public void onPageSelected(int tag)
+        {
+            int i = 0;
+            if(!isEmptyList) {
+                while (i < 2) {
+                    if (tag == i) {
+                        ll.findViewWithTag(i).setSelected(true);
+                    } else {
+                        ll.findViewWithTag(i).setSelected(false);
+                    }
+                    i++;
+                }
+            }
+            if(tag==0){
+                RestaurantInfoClose();
+            }
+        }
+
+        @Override
+        public void onPageScrollStateChanged(int state)
+        {
+
+        }
+    };
     /**
      * 탭 클릭에 대해 화면변환 리스너
      */
@@ -165,6 +211,9 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                 }
             }
             vp.setCurrentItem(tag);
+            if(tag==0){
+                RestaurantInfoClose();
+            }
         }
     };
 
@@ -517,7 +566,6 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                             getData("http://210.115.48.131/getSearchResult.php?search="+tagSearch.getText());
                             isEmptyList=false;//검색동작으로 리스트생성됨을 알림
                             inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(), 0);
-                           // tab_list.setSelected(true);
                             tab_list.callOnClick();
                             break;
                     }
@@ -618,9 +666,10 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
     }
     //가게정보를 띄우는 메소드
     public void RestaurantInfoOpen(int index){
-        strt_name.setText(bundle.getString("n"+(index+1)));
+        strt_name.setText(bundle.getString("n"+(index+1))+" "+bundle.getFloat("g"+(index+1))+"점");
       //  strt_info.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,300));
         strt_info.setVisibility(View.VISIBLE);
+        ratingBar.setRating(0);
     }
     //가게정보를 숨기는 메소드
     public void RestaurantInfoClose(){
