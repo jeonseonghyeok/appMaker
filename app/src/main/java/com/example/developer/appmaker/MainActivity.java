@@ -10,13 +10,13 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.os.AsyncTask;
 import android.os.Build;
-import android.os.Handler;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
@@ -42,17 +42,19 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
+import java.io.Console;
 import java.io.File;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
 
 public class MainActivity extends AppCompatActivity implements GPSFinderFragment.GPSListener, FirstFragment.OnMyListener{
+    BackPressCloseHandler backPressCloseHandler;
     ViewPager vp;
     LinearLayout ll;
-    Button gpsFindButton,bt_downGrade,bt_upGrade,bt_reviewConfirm,bt_reviewCancel;
-    ImageButton bt_review;
+    Button gpsFindButton,bt_downGrade,bt_upGrade,bt_reviewConfirm,bt_reviewCancel,bt_review;
     RatingBar ratingBar;
     String[] tagList_Array,gpsList_Array;
     LatLng position;//현재위치를 가지고있는 객체
@@ -66,11 +68,17 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
     Dialog dialog;//리뷰를 위한 다이얼로그
     TextView strt_name;//선택된(selected)가게(restaurant) 이름(name)
     InputMethodManager inputMethodManager;//키보드 사용유무를 관리하는 매니저
-    boolean isEmptyList;
 
+    String user_id="admin";
+    boolean isEmptyList=true;//검색결과가 없는지 확인
+    boolean isFirstReview=true;//첫리뷰인가(한 가게대상)
+    String rvTag="";
+    String rvContent="";
+    int curRtCode;
     private static final String TAG_ID = "id";
     private static final String TAG_ADD = "address";
     JSONArray restaurants = null;
+    float mapSize;
 
     private GpsInfo gps;
     private final int PERMISSIONS_ACCESS_FINE_LOCATION = 1000;
@@ -84,7 +92,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         setContentView(R.layout.activity_main);
 
 
-
+        backPressCloseHandler= new BackPressCloseHandler(this);
         gpsSearch= (AutoCompleteTextView) findViewById(R.id.gpsSearch);
         tagSearch = (AutoCompleteTextView) findViewById(R.id.tagSearch);
         gps = new GpsInfo(MainActivity.this);
@@ -105,16 +113,16 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         tab_map.setOnClickListener(movePageListener);
         tab_map.setTag(1);
         tab_map.setSelected(true);
-        isEmptyList=true;//검색 전 검색결과 리스트 존재하지않음
         bt_upGrade= (Button)findViewById(R.id.bt_upGrade);
         bt_downGrade= (Button)findViewById(R.id.bt_downGrade);
-        bt_review=(ImageButton)findViewById(R.id.bt_review);
+        bt_review=(Button)findViewById(R.id.bt_review);
         ratingBar= (RatingBar)findViewById(R.id.ratingBar);
         //데이터베이스를 생성
         sqliteDB = init_database();
         init_tables() ;
         getTypes("http://210.115.48.131/getRestaurantType.php");//주소로 부터 가게대분류(타입)을 가져옴
         showPositionList();//gpsSearch의 기능을 만들어줌 리스트목록을 넣어 선택가능하도록
+        curRtCode=0;
 
         vp.addOnPageChangeListener(pageChangeListener);
         bt_upGrade.setOnClickListener(upGradeListener);
@@ -123,7 +131,12 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         bt_review.setOnClickListener(reviewBTListener);
 
     }
+    //뒤고가기 버튼을 제어함
+    public void onBackPressed() {
+        //super.onBackPressed();
 
+        backPressCloseHandler.onBackPressed();
+    }
 
 
     /**
@@ -132,9 +145,13 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
     OnClickListener reviewBTListener = new OnClickListener() {
         @Override
         public void onClick(View v) {
-            ReviewDialog reviewDialog = new ReviewDialog(MainActivity.this);//리뷰다이얼로그를 생성한다.
-            reviewDialog.callFunction(strt_info);
 
+            ReviewDialog reviewDialog = new ReviewDialog(MainActivity.this);//리뷰다이얼로그를 생성한다.
+            float curRtReviewGrade=ratingBar.getRating();
+            if(isFirstReview)
+                reviewDialog.callFunction(user_id,curRtCode,curRtReviewGrade,strt_info);
+            else
+                reviewDialog.reviewUpdate(user_id,curRtCode,curRtReviewGrade,rvTag,rvContent,strt_info);
         }
     };
 
@@ -501,13 +518,14 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                     HttpURLConnection con = (HttpURLConnection) url.openConnection();
                     StringBuilder sb = new StringBuilder();
                     bufferedReader = new BufferedReader(new InputStreamReader(con.getInputStream()));
-
                     String json;
                     while ((json = bufferedReader.readLine()) != null) {
                         sb.append(json + "\n");
                     }
+                    con.disconnect();
                     return sb.toString().trim();
                 } catch (Exception e) {
+                    Log.d("updatTest", "문제발생3");
                     return null;
                 }
             }
@@ -552,10 +570,18 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                 public void onItemClick(AdapterView<?> parent, View view, int index, long id) {
                     ListView listView = (ListView) parent;
                     String rtype = (String) listView.getItemAtPosition(index);//결과리스트 순서에서의 포지션
-                    getData("http://210.115.48.131/getSearchResult.php?search="+rtype);
-                    isEmptyList=false;//검색동작으로 리스트생성됨을 알림
+
+                    GPSFinderFragment gpsFragment = (GPSFinderFragment)getSupportFragmentManager().findFragmentById(R.id.vp);
+                    Log.d("위경도파악", position.latitude+" "+position.longitude+" "+gpsFragment.getMapSize());
+                    mapSize=gpsFragment.getMapSize();
+                    Log.d("mapsize", mapSize+ "");
+                    getData("http://210.115.48.131/getSearchResult.php?type="+rtype+"&map_size="+mapSize+"&lat="+position.latitude+"&lng="+position.longitude);
+
+
+                    Log.d("mapsize", mapSize+ "");
+
                     inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(),0);
-                    tab_list.callOnClick();
+
                 }
             });
             tagSearch.setOnEditorActionListener(new EditText.OnEditorActionListener() {
@@ -563,16 +589,16 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                 public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                     switch (actionId) {
                         case EditorInfo.IME_ACTION_SEARCH://태그엔터(검색)치면
-                            getData("http://210.115.48.131/getSearchResult.php?search="+tagSearch.getText());
-                            isEmptyList=false;//검색동작으로 리스트생성됨을 알림
+                            getData("http://210.115.48.131/getSearchResult.php?type="+tagSearch.getText());
                             inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(), 0);
-                            tab_list.callOnClick();
                             break;
                     }
                     return true;
                 }
             });
         } catch (JSONException e) {
+
+            Log.d("updatTest", "문제발생2");
             e.printStackTrace();
         }
 
@@ -601,13 +627,13 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                     HttpURLConnection con = (HttpURLConnection) url.openConnection();
                     StringBuilder sb = new StringBuilder();
                     bufferedReader = new BufferedReader(new InputStreamReader(con.getInputStream()));
-
                     String json;
                     while ((json = bufferedReader.readLine()) != null) {
                         sb.append(json + "\n");
                     }
                     return sb.toString().trim();
                 } catch (Exception e) {
+                    Log.d("updatTest", "getdata문제발생");
                     return null;
                 }
             }
@@ -621,7 +647,6 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
             @Override
             protected void onCancelled() {
                 super.onCancelled();
-                Toast.makeText(MainActivity.this, "ddd.", Toast.LENGTH_SHORT).show();
 
             }
         }
@@ -631,11 +656,13 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
     }
     protected void showRestaurantList() {
         try {
-            JSONObject jsonObj = new JSONObject(myJSON);
-            restaurants = jsonObj.getJSONArray("result");//데이터집합의 이름
-            int searchResult= restaurants.length();
-            if(searchResult>0) {
+
+            if(!myJSON.isEmpty()){
+                JSONObject jsonObj = new JSONObject(myJSON);
+                restaurants = jsonObj.getJSONArray("result");//데이터집합의 이름
+                int searchResult= restaurants.length();
                 bundle.putInt("size", searchResult);
+                isEmptyList=false;//검색동작으로 리스트생성됨을 알림
                 //   Log.d("logcatch", "showList: 4011line");
                 for (int i = 1; i <= restaurants.length(); i++) {
                     JSONObject c = restaurants.getJSONObject(i-1);
@@ -644,13 +671,102 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                     bundle.putString("n" + i, c.getString("rname"));
                     bundle.putDouble("lat" + i, c.getDouble("rgps_lat"));
                     bundle.putDouble("lng" + i, c.getDouble("rgps_lng"));
-                    bundle.putFloat("g" + i, (float) c.getDouble("rrga"));
+                    bundle.putFloat("g" + i, (float) c.getDouble("rag"));
                 }
-
                 vp.setAdapter(new searchResultPagerAdapter(getSupportFragmentManager()));
+                tab_list.callOnClick();
+            }
+            else{
+                isEmptyList=true;//검색이 실패
+                vp.setAdapter(new gpsPagerAdapter(getSupportFragmentManager()));
+                tab_map.callOnClick();
+                bundle.putInt("size", 0);
+                Toast.makeText(MainActivity.this, "정보를 찾을 수 없습니다.", Toast.LENGTH_SHORT).show();
+            }
+        } catch (JSONException e) {
+            Log.d("updatTest", "문제발생1");
+            e.printStackTrace();
+        }
+
+    }
+
+    /**
+     * 리뷰작성(수정)
+     * 선택한 가게에 대한 리뷰를 제공 만일 기존에 작성한 것이 있다면 수정할 수 있도록 한다.
+     * @param url
+     */
+
+    public void isUpdateReview(String url) {
+        class GetDataJSON extends AsyncTask<String, Void, String> {
+
+            @Override
+            protected String doInBackground(String... params) {
+
+                String uri = params[0];
+                BufferedReader bufferedReader = null;
+                try {
+                    URL url = new URL(uri);
+                    HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+
+                    httpURLConnection.setReadTimeout(5000);
+                    httpURLConnection.setConnectTimeout(5000);
+
+                    StringBuilder sb = new StringBuilder();
+                    InputStreamReader ist=new InputStreamReader(httpURLConnection.getInputStream());
+
+                    bufferedReader = new BufferedReader(ist);
+                    String json;
+                    while ((json = bufferedReader.readLine()) != null) {
+                        sb.append(json + "\n");
+                    }
+                    return sb.toString().trim();
+                } catch (Exception e) {
+                    return null;
+                }
             }
 
+            @Override
+            protected void onPostExecute(String result) {
+              //  Log.d("updatTest", result);
+                myJSON = result;
+                PrevReview();
+            }
+
+            @Override
+            protected void onCancelled() {
+                super.onCancelled();
+
+            }
+        }
+        GetDataJSON g = new GetDataJSON();
+        g.execute(url);
+
+    }
+    protected void PrevReview() {
+        try {
+            isFirstReview=true;//첫 리뷰로 가정
+            ratingBar.setRating(0);
+            if(!myJSON.isEmpty()) {
+                JSONObject jsonObj = new JSONObject(myJSON);
+                JSONArray review = jsonObj.getJSONArray("result");//데이터집합의 이름
+
+                JSONObject c = review.getJSONObject(0);
+               // Log.d("updatTest", c.getDouble("rv_grade")+"");
+                isFirstReview=false;//첫 리뷰가 아님
+                bt_review.setBackgroundResource(R.drawable.bt_review_recurring);
+                ratingBar.setRating((float) c.getDouble("rv_grade"));
+                rvTag=c.getString("rv_tag");
+                rvContent=c.getString("rv_content");
+                Log.d("updatTest", c.getString("rv_content"));
+                }
+            else{//이전의 데이터가 없는경우
+                bt_review.setBackgroundResource(R.drawable.bt_review);
+                Log.d("updatTest", "첫리뷰");
+            }
+
+
         } catch (JSONException e) {
+            Log.d("updatTest", "PrevReview문제발생");
             e.printStackTrace();
         }
 
@@ -666,10 +782,11 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
     }
     //가게정보를 띄우는 메소드
     public void RestaurantInfoOpen(int index){
-        strt_name.setText(bundle.getString("n"+(index+1))+" "+bundle.getFloat("g"+(index+1))+"점");
-      //  strt_info.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,300));
+        strt_name.setText(bundle.getString("n"+(index+1))+" "+bundle.getFloat("g"+(index+1))+"점"+" ");
+        curRtCode=bundle.getInt("m"+(index+1));
+        Log.d("updatTest", "테스트시작");
+        isUpdateReview("http://210.115.48.131/getIsUpdateReview.php?rcode="+curRtCode+"&user_id="+user_id);
         strt_info.setVisibility(View.VISIBLE);
-        ratingBar.setRating(0);
     }
     //가게정보를 숨기는 메소드
     public void RestaurantInfoClose(){

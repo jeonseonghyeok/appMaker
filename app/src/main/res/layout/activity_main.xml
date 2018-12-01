@@ -40,7 +40,7 @@
                 android:id="@+id/gpsSearchButton"
                 android:layout_width="30dp"
                 android:layout_height="30dp"
-                android:background="@drawable/gps" />
+                android:background="@drawable/bt_gps" />
 
         </LinearLayout>
 
@@ -163,29 +163,32 @@
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
+                android:gravity="center"
                 android:orientation="vertical">
 
                 <Button
                     android:id="@+id/bt_upGrade"
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
-                    android:layout_weight="1"
-                    android:text="증가" />
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="@drawable/bt_up" />
 
                 <Button
                     android:id="@+id/bt_downGrade"
-                    android:layout_width="match_parent"
-                    android:layout_height="0dp"
-                    android:layout_weight="1"
-                    android:text="감소" />
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_marginBottom="10dp"
+                    android:background="@drawable/bt_down" />
+
             </LinearLayout>
 
-            <ImageButton
+            <Button
                 android:id="@+id/bt_review"
-                android:layout_width="0dp"
+                android:layout_width="50dp"
                 android:layout_height="50dp"
-                android:layout_weight="1"
-                android:background="@drawable/gps" />
+                android:layout_marginLeft="10dp"
+                android:layout_marginBottom="10dp"
+                android:background="@drawable/bt_review" />
+
         </LinearLayout>
     </LinearLayout>
 

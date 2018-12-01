@@ -199,18 +199,24 @@ public class GPSFinderFragment extends Fragment implements OnMapReadyCallback {
      */
     public void changedPosition(LatLng latLng){
         gpsPosition=latLng;
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(gpsPosition, cameraZoomSize));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(gpsPosition));
         movePosition(latLng);
 
     }
     //인덱스를 통해 가게로 이동
     public void goToRestaurant(int index){
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(m[index].getPosition(), cameraZoomSize));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(gpsPosition));
 
     }
     //지도에서 가게로 이동
     public void moveToRestaurant(int index){
         mMap.animateCamera(CameraUpdateFactory.newLatLng(m[index].getPosition()));
         ((MainActivity)getActivity()).RestaurantInfoOpen(index);
+    }
+    public float getMapSize(){
+        return mMap.getCameraPosition().zoom;
+    }
+    public void setMapSize(float mapSize){
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(gpsPosition,mapSize));
     }
 }
