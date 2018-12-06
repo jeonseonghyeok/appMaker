@@ -129,12 +129,13 @@ public class GPSFinderFragment extends Fragment implements OnMapReadyCallback {
         extra = getArguments();//액티비티에서 전송한 데이터를 받아오는 객체
         mMap = googleMap;
         //정문위치 lat 37.8663 lng127.7385
-
+        mMap.setMaxZoomPreference(17f);
+        mMap.setMinZoomPreference(13f);
         //final Marker[] m= new Marker[1];
-        gpsPosition = new LatLng(getArguments().getDouble("GPSLat"), getArguments().getDouble("GPSLng"));
+        gpsPosition = new LatLng(extra.getDouble("GPSLat"), extra.getDouble("GPSLng"));
         position=mMap.addMarker(new MarkerOptions().position(gpsPosition).icon(BitmapDescriptorFactory.fromResource(R.drawable.android)));
         searchResult();
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(gpsPosition, cameraZoomSize));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(gpsPosition, (float) extra.getDouble("csize")));
         mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng latLng) {
@@ -142,16 +143,7 @@ public class GPSFinderFragment extends Fragment implements OnMapReadyCallback {
                 movePosition(latLng);
             }
         });
-        //버튼클릭시 장소저장기능
-        /*
-        saveButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if(!positionName.getText().toString().isEmpty()) {
-                    mOnMyListener.onReceivedSavePosition(positionName);
-                }
-            }
-        });*/
+
         mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
             public boolean onMarkerClick(Marker marker) {
@@ -217,6 +209,6 @@ public class GPSFinderFragment extends Fragment implements OnMapReadyCallback {
         return mMap.getCameraPosition().zoom;
     }
     public void setMapSize(float mapSize){
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(gpsPosition,mapSize));
+       // mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(gpsPosition,mapSize));
     }
 }
