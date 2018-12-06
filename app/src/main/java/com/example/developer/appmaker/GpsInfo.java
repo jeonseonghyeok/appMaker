@@ -19,7 +19,7 @@ import android.support.v4.content.ContextCompat;
 public class GpsInfo extends Service implements LocationListener {
 
     private final Context mContext;
-
+//
     // 현재 GPS 사용유무
     boolean isGPSEnabled = false;
 
