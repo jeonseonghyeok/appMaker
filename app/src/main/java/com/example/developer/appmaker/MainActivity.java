@@ -140,7 +140,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
     }
 
     //뒤고가기 버튼을 제어함
-    public void onBackPressed() {
+    public void onBackPressed() {//
         //super.onBackPressed();
         backPressCloseHandler.onBackPressed();
     }
