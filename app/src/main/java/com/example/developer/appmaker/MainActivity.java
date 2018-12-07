@@ -52,7 +52,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
     BackPressCloseHandler backPressCloseHandler;
     ViewPager vp;
     LinearLayout ll,ly_savePosition,ly_basicButtons;
-    Button gpsFindButton, bt_downGrade, bt_upGrade, bt_reviewConfirm, bt_reviewCancel, bt_review;
+    Button gpsFindButton, bt_downGrade, bt_upGrade, bt_reviewConfirm, bt_reviewCancel, bt_review, bt_savePosition;
     ImageButton bt_showSPL;
     RatingBar ratingBar;
     String[] tagList_Array, gpsList_Array;
@@ -61,8 +61,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
     Bundle bundle;
     EditText tag;
     String myJSON;
-    TextView tab_list;
-    TextView tab_map;
+    TextView tab_list, tab_map, positionName;
     LinearLayout strt_info;//가게정보를 띄워주는 화면//초기에 평가만 올리면 상세정보
     Dialog dialog;//리뷰를 위한 다이얼로그
     TextView strt_name;//선택된(selected)가게(restaurant) 이름(name)
@@ -70,6 +69,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
 
     String user_id = "admin";
     boolean isEmptyList;//검색결과가 없는지 확인
+    String searchedWord;//검색된 단어(새로운 단어가 검색되기 전까지 변경X)
     boolean isFirstReview = true;//첫리뷰인가(한 가게대상)
     float mapSize = 15f;
     String rvTag = "";
@@ -104,11 +104,13 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         callPermission();// gps 권한 요청을 해야 함
         gpsMove(37.869071, 127.742778);
         isEmptyList = true;//검색이 실패로 가정
+        searchedWord = "";
         vp.setAdapter(new searchResultPagerAdapter(getSupportFragmentManager()));
         gpsFindButton = (Button) findViewById(R.id.gpsSearchButton);
         inputMethodManager = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);//키보드를 관리하는 매니저
         tab_map = (TextView) findViewById(R.id.tab_map);
         tab_list = (TextView) findViewById(R.id.tab_list);
+        positionName = (TextView) findViewById(R.id.positionName);
         tab_list.setOnClickListener(movePageListener);
         tab_list.setTag(0);
         tab_map.setOnClickListener(movePageListener);
@@ -118,10 +120,12 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         bt_upGrade = (Button) findViewById(R.id.bt_upGrade);
         bt_downGrade = (Button) findViewById(R.id.bt_downGrade);
         bt_review = (Button) findViewById(R.id.bt_review);
+        bt_savePosition= (Button) findViewById(R.id.bt_savePosition);
         ratingBar = (RatingBar) findViewById(R.id.ratingBar);
         bt_showSPL = (ImageButton)findViewById(R.id.bt_showSPL);
         ly_savePosition = (LinearLayout)findViewById(R.id.savePositionLayout);
         ly_basicButtons =  (LinearLayout)findViewById(R.id.basicButtonsLayout);
+
         //데이터베이스를 생성
         sqliteDB = init_database();
         init_tables();
@@ -137,6 +141,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         bt_downGrade.setOnClickListener(downGradeListener);
         bt_review.setOnClickListener(reviewBTListener);
         bt_showSPL.setOnClickListener(showSavePositionLayoutListener);
+        bt_savePosition.setOnClickListener(savePositionListener);
     }
 
     //뒤고가기 버튼을 제어함
@@ -144,7 +149,15 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         //super.onBackPressed();
         backPressCloseHandler.onBackPressed();
     }
-
+    /**
+     * 위치를 저장하는 기능의 리스너
+     */
+    OnClickListener savePositionListener = new OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            save_Position(positionName);
+        }
+    };
     /**
      * 위치를 저장하는 레이아웃을 노출시키도록 하는 리스너
      */
@@ -194,28 +207,32 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
     ViewPager.OnPageChangeListener pageChangeListener = new ViewPager.OnPageChangeListener() {
         @Override
         public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-            Log.d("logd:페이지스크롤", "position:" + position);
-            Log.d("logd:페이지스크롤", "positionOffset:" + position);
-            Log.d("logd:페이지스크롤", "position:" + position);
+           // Log.d("logd", "odd"+positionOffsetPixels);
         }
+
 
         @Override
         public void onPageSelected(int tag) {
             int i = 0;
-            if (!isEmptyList) {
+            if (!isEmptyList) {//검색결과가 없을때(로딩후 처음)가 아니라면 페이지이동을 도움
                 while (i < 2) {
                     if (tag == i) {
                         ll.findViewWithTag(i).setSelected(true);
-                        Log.d("logd:페이지선택", "onPageSelected: " + tag);
+
                     } else {
                         ll.findViewWithTag(i).setSelected(false);
                     }
                     i++;
                 }
+
             }
             if (tag == 0) {
-                RestaurantInfoClose();
+                closeLayoutForMap();
             }
+            else if(tag ==1){
+                showBasicButtonlayout();
+            }
+            Log.d("logd", "태그:"+tag);
         }
 
         @Override
@@ -224,7 +241,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         }
     };
     /**
-     * 탭 클릭에 대해 화면변환 리스너
+     * 탭 클릭에 대해 화면변환
      */
     OnClickListener movePageListener = new OnClickListener() {
         @Override
@@ -243,10 +260,9 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                 }
 
                 vp.setCurrentItem(tag);
+
             }
-            if (tag == 0) {
-                RestaurantInfoClose();
-            }
+
         }
     };
 
@@ -263,7 +279,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
         final String _positionName = positionName.getText().toString();
         String sqlSelect = "SELECT * " +
-                "FROM CONTACT_T " +
+                "FROM position_t " +
                 "WHERE NAME = '" + _positionName + "'";
         Cursor c = sqliteDB.rawQuery(sqlSelect, null);
         if (!isChunCheon(position.latitude, position.longitude)) {//춘천이 아니면 저장불가
@@ -292,16 +308,15 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                         @Override
                         public void onClick(DialogInterface arg0, int arg1) {
 
-                            //데이터 모두 지우기
-                            // sqliteDB.execSQL("DELETE FROM CONTACT_T") ;
-                            String sqlInsert = "INSERT INTO CONTACT_T " +
+
+
+                            String sqlInsert = "INSERT INTO position_t " +
                                     "(NAME, LAT, LNG) VALUES ('" +
                                     _positionName + "'," +
                                     position.latitude + "," +
                                     position.longitude +
                                     ")";
 
-                            System.out.println("log " + sqlInsert);
                             sqliteDB.execSQL(sqlInsert);
                             Toast.makeText(MainActivity.this, "장소 '" + _positionName + "'(이)가 저장되었습니다.", Toast.LENGTH_SHORT).show();
                             positionName.setText(null);
@@ -312,6 +327,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
 
             AlertDialog.Builder builder = alertDialogBuilder.setNegativeButton("아니오", new DialogInterface.OnClickListener() {
                 public void onClick(DialogInterface dialog, int which) {
+                    sqliteDB.execSQL("DELETE FROM position_t") ; //위치데이터 모두 지우기
                     positionName.setText(null);
                     // finish();0
                 }
@@ -325,21 +341,37 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
 
     private void init_tables() {
         if (sqliteDB != null) {
-            String sqlCreateTbl = "CREATE TABLE IF NOT EXISTS CONTACT_T (" +
-                    "NAME " + "TEXT," +
-                    "LAT " + "REAL," +
-                    "LNG " + "REAL" +
-                    ")";
+            Cursor cursor = sqliteDB.rawQuery("SELECT name FROM sqlite_master WHERE type='table' AND name ='position_t'" , null);
+            cursor.moveToFirst();
+            Log.d("logd 카운트값", cursor.getCount()+"");
+           if(cursor.getCount()==0){//테이블이 없으면
+               String sqlCreateTbl = "CREATE TABLE position_t (" +
+                       "NAME " + "TEXT," +
+                       "LAT " + "REAL," +
+                       "LNG " + "REAL" +
+                       ")";
+               sqliteDB.execSQL(sqlCreateTbl);
+               positionData positiondata=new positionData();
+               String[] Insertsql =  positiondata.getPositionInsertSql();
+               //   "INSERT INTO position_t(NAME, LAT, LNG) VALUES ('남역', 37.872535,127.744873)";
+               for(int i=0;i<Insertsql.length;i++){
+                   String sql="INSERT INTO position_t(NAME, LAT, LNG) VALUES ("+Insertsql[i]+")";
+                   sqliteDB.execSQL(sql);
+                   Log.d("logd", i+": "+sql);
+               }
+            }
             //System.out.println(sqlCreateTbl);
-            sqliteDB.execSQL(sqlCreateTbl);
-            // sqliteDB.execSQL("DROP TABLE IF EXISTS CONTACT_T") ;//테이블 삭제코드
+
+
+
+
+            // sqliteDB.execSQL("DROP TABLE IF EXISTS position_t") ;//테이블 삭제코드
         }
     }
 
 
     private SQLiteDatabase init_database() {
         SQLiteDatabase db = null;
-        // File file = getDatabasePath("contact.db") ;
         File file = new File(getFilesDir(), "contact.db");
         // System.out.println("PATH : " + file.toString()) ;
         try {
@@ -444,7 +476,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
     }
 
     protected void showPositionList(){
-        Cursor cursor = sqliteDB.rawQuery("select NAME from CONTACT_T",null);
+        Cursor cursor = sqliteDB.rawQuery("select NAME from position_t",null);
         gpsList_Array =new String[cursor.getCount()];
         int i=0;
         while( cursor.moveToNext() ) {
@@ -456,7 +488,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         gpsSearch.setOnTouchListener(new View.OnTouchListener(){
             @Override
             public boolean onTouch(View v, MotionEvent event){
-                RestaurantInfoClose();
+                showBasicButtonlayout();
                 if(gpsSearch.getText().length()>0)
                     gpsSearch.setText("");
                 else
@@ -471,7 +503,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                 String item = (String) listView.getItemAtPosition(index);//결과리스트 순서에서의 포지션
                 //Toast.makeText(getApplicationContext(), item, Toast.LENGTH_LONG).show();
                 String sqlSelect = "SELECT * " +
-                        "FROM CONTACT_T " +
+                        "FROM position_t " +
                         "WHERE NAME = '"+item+"'";
                 Cursor c=sqliteDB.rawQuery(sqlSelect,null);
                 if(c.moveToFirst()) {//커서를 처음으로 이동시켜야 한다.
@@ -561,7 +593,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
             tagSearch.setOnTouchListener(new View.OnTouchListener(){
                 @Override
                 public boolean onTouch(View v, MotionEvent event){
-                    RestaurantInfoClose();
+                    showBasicButtonlayout();
                     if(tagSearch.getText().length()>0)
                         tagSearch.setText("");
                     else
@@ -573,13 +605,15 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                 @Override
                 public void onItemClick(AdapterView<?> parent, View view, int index, long id) {
                     ListView listView = (ListView) parent;
-                    String rtype = (String) listView.getItemAtPosition(index);//결과리스트 순서에서의 포지션
-
+                    searchRestaurant(tagSearch.getText().toString());
+                    /*
+                    String searchWord = (String) listView.getItemAtPosition(index);//결과리스트 순서에서의 포지션
+                    searchRestaurant(searchWord);
                     GPSFinderFragment gpsFragment = (GPSFinderFragment)getSupportFragmentManager().findFragmentById(R.id.vp);
                     mapSize=gpsFragment.getMapSize();
-                    getData("http://210.115.48.131/getSearchResult.php?type="+rtype+"&map_size="+mapSize+"&lat="+position.latitude+"&lng="+position.longitude);
-
+                    getData("http://210.115.48.131/getSearchResult.php?type="+searchWord+"&map_size="+mapSize+"&lat="+position.latitude+"&lng="+position.longitude);
                     inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(),0);
+                    */
 
                 }
             });
@@ -588,10 +622,14 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                 public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                     switch (actionId) {
                         case EditorInfo.IME_ACTION_SEARCH://태그엔터(검색)치면
+                            searchRestaurant(tagSearch.getText().toString());
+                           /*
+                            searchWord=""+tagSearch.getText();
                             GPSFinderFragment gpsFragment = (GPSFinderFragment)getSupportFragmentManager().findFragmentById(R.id.vp);
                             mapSize=gpsFragment.getMapSize();
-                            getData("http://210.115.48.131/getSearchResult.php?type="+tagSearch.getText()+"&map_size="+mapSize+"&lat="+position.latitude+"&lng="+position.longitude);
+                            getData("http://210.115.48.131/getSearchResult.php?type="+searchWord+"&map_size="+mapSize+"&lat="+position.latitude+"&lng="+position.longitude);
                             inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(), 0);
+                            */
                             break;
                     }
                     return true;
@@ -599,10 +637,15 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
             });
         } catch (JSONException e) {
 
-            Log.d("updatTest", "문제발생2");
             e.printStackTrace();
         }
 
+    }
+    public void searchRestaurant(String searchWord){
+        GPSFinderFragment gpsFragment = (GPSFinderFragment)getSupportFragmentManager().findFragmentById(R.id.vp);
+        mapSize=gpsFragment.getMapSize();
+        getData("http://210.115.48.131/getSearchResult.php?type="+searchWord+"&map_size="+mapSize+"&lat="+position.latitude+"&lng="+position.longitude);
+        inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(), 0);
     }
     //좌표이동 메소드
     private void gpsMove(double lat,double lng){
@@ -659,11 +702,13 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         try {
             bundle.putDouble("csize",mapSize);
             if(!myJSON.isEmpty()){
+                Log.d("logd", "검색어 "+tagSearch.getText().toString());
+                isEmptyList=false;//검색동작으로 리스트생성됨을 알림
                 JSONObject jsonObj = new JSONObject(myJSON);
                 restaurants = jsonObj.getJSONArray("result");//데이터집합의 이름
                 int searchResult= restaurants.length();
                 bundle.putInt("size", searchResult);
-                isEmptyList=false;//검색동작으로 리스트생성됨을 알림
+
                 //   Log.d("logcatch", "showList: 4011line");
                 for (int i = 1; i <= restaurants.length(); i++) {
                     JSONObject c = restaurants.getJSONObject(i-1);
@@ -675,7 +720,14 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                     bundle.putFloat("g" + i, (float) c.getDouble("rag"));
                 }
                 vp.setAdapter(new searchResultPagerAdapter(getSupportFragmentManager()));
-                tab_list.callOnClick();
+                if(!searchedWord.equals(tagSearch.getText().toString())) {
+                    Log.d("logd", "왜:지 ");
+                    tab_list.callOnClick();
+                    searchedWord=tagSearch.getText().toString();
+                }
+                else{
+                    tab_map.callOnClick();
+                }
             }
             else{
                 isEmptyList=true;//검색이 실패
@@ -791,11 +843,17 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         ly_savePosition.setVisibility(View.GONE);
         ly_basicButtons.setVisibility(View.GONE);
     }
-    //가게정보를 숨기는 메소드
-    public void RestaurantInfoClose(){
+    //기본버튼을 띄우는 메소드
+    public void showBasicButtonlayout(){
         strt_info.setVisibility(View.GONE);
         ly_savePosition.setVisibility(View.GONE);
         ly_basicButtons.setVisibility(View.VISIBLE);
+    }
+    //맵에서 사용되는 레이아웃을 숨김(위치저장,가게등록,기본버튼들)
+    public void closeLayoutForMap(){
+        strt_info.setVisibility(View.GONE);
+        ly_savePosition.setVisibility(View.GONE);
+        ly_basicButtons.setVisibility(View.GONE);
     }
 }
 

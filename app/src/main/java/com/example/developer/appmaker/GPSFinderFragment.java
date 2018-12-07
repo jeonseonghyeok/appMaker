@@ -178,7 +178,7 @@ public class GPSFinderFragment extends Fragment implements OnMapReadyCallback {
      * @param latLng
      */
     private void movePosition(LatLng latLng){//맵의 좌표로 이동, 가게정보를 숨김
-        ((MainActivity)getActivity()).RestaurantInfoClose();
+        ((MainActivity)getActivity()).showBasicButtonlayout();
         gpsPosition=latLng;
         position.remove();
         position=mMap.addMarker(new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.android)));
