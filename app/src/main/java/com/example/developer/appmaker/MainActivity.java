@@ -53,7 +53,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
     ViewPager vp;
     LinearLayout ll,ly_savePosition,ly_basicButtons;
     Button gpsFindButton, bt_downGrade, bt_upGrade, bt_reviewConfirm, bt_reviewCancel, bt_review, bt_savePosition;
-    ImageButton bt_showSPL;
+    ImageButton bt_showSPL,bt_reSearch;
     RatingBar ratingBar;
     String[] tagList_Array, gpsList_Array;
     LatLng position;//현재위치를 가지고있는 객체
@@ -123,6 +123,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         bt_savePosition= (Button) findViewById(R.id.bt_savePosition);
         ratingBar = (RatingBar) findViewById(R.id.ratingBar);
         bt_showSPL = (ImageButton)findViewById(R.id.bt_showSPL);
+        bt_reSearch =  (ImageButton)findViewById(R.id.bt_reSearch);
         ly_savePosition = (LinearLayout)findViewById(R.id.savePositionLayout);
         ly_basicButtons =  (LinearLayout)findViewById(R.id.basicButtonsLayout);
 
@@ -141,6 +142,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         bt_downGrade.setOnClickListener(downGradeListener);
         bt_review.setOnClickListener(reviewBTListener);
         bt_showSPL.setOnClickListener(showSavePositionLayoutListener);
+        bt_reSearch.setOnClickListener(reSearchListener);
         bt_savePosition.setOnClickListener(savePositionListener);
     }
 
@@ -149,6 +151,16 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         //super.onBackPressed();
         backPressCloseHandler.onBackPressed();
     }
+    /**
+     * 다시검색하는 리스너
+     */
+    OnClickListener reSearchListener = new OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            if(!searchedWord.isEmpty())
+                getData("http://210.115.48.131/getSearchResult.php?type="+searchedWord+"&map_size="+mapSize+"&lat="+position.latitude+"&lng="+position.longitude);
+        }
+    };
     /**
      * 위치를 저장하는 기능의 리스너
      */
@@ -465,7 +477,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
 
         gps = new GpsInfo(MainActivity.this);
         // GPS 사용유무 가져오기
-        if (gps.isGetLocation() && isChunCheon(gps.getLatitude(),gps.getLongitude())) {//사용가능할때&&춘천일때
+        if (gps.isGetLocation()) {//사용가능할때&&춘천일때
             gpsMove(gps.getLatitude(),gps.getLongitude());
             gpsSearch.setText("현재 위치");
         } else {
@@ -488,7 +500,6 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         gpsSearch.setOnTouchListener(new View.OnTouchListener(){
             @Override
             public boolean onTouch(View v, MotionEvent event){
-                showBasicButtonlayout();
                 if(gpsSearch.getText().length()>0)
                     gpsSearch.setText("");
                 else
@@ -593,7 +604,6 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
             tagSearch.setOnTouchListener(new View.OnTouchListener(){
                 @Override
                 public boolean onTouch(View v, MotionEvent event){
-                    showBasicButtonlayout();
                     if(tagSearch.getText().length()>0)
                         tagSearch.setText("");
                     else
@@ -721,8 +731,8 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                 }
                 vp.setAdapter(new searchResultPagerAdapter(getSupportFragmentManager()));
                 if(!searchedWord.equals(tagSearch.getText().toString())) {
-                    Log.d("logd", "왜:지 ");
                     tab_list.callOnClick();
+                    closeLayoutForMap();
                     searchedWord=tagSearch.getText().toString();
                 }
                 else{
