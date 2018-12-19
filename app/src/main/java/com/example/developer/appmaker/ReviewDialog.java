@@ -20,13 +20,14 @@ public class ReviewDialog{
         this.context = context;
     }
     // 호출할 다이얼로그 함수를 정의한다.
-    public void callFunction(final String user_id,final int curRtCode, final float curRtReviewGrade,final LinearLayout strt_info) {//가게코드,가게평가점수,가게리뷰버튼(수정필요)를 받아옴
+    public void reviewInsert(final String user_id,final int curRtCode, final float curRtReviewGrade,final LinearLayout strt_info) {//가게코드,가게평가점수,가게리뷰버튼를 받아옴
         // 커스텀 다이얼로그를 정의하기위해 Dialog클래스를 생성한다.
         final Dialog dlg = new Dialog(context);
 
         // 액티비티의 타이틀바를 숨긴다.
         dlg.requestWindowFeature(Window.FEATURE_NO_TITLE);
-
+        //요청이 이 다이어로그를 종료할 수 없게 지정
+        dlg.setCancelable(false);
         // 커스텀 다이얼로그의 레이아웃을 설정한다.
         dlg.setContentView(R.layout.dialog_review);
 
@@ -49,11 +50,11 @@ public class ReviewDialog{
                 String tag = String.valueOf(tvTag.getText());
                 // Log.d("logwhat", String.valueOf(tvTag.getText()));
                 String content = String.valueOf(tvContent.getText());
-                if(tag.isEmpty()) {
-                    Toast.makeText(context, "메뉴명을 입력해주세요.", Toast.LENGTH_SHORT).show();
+                if(tag.length()<2) {
+                    Toast.makeText(context, "메뉴명을 입력해주세요.(2자 이상)", Toast.LENGTH_SHORT).show();
                 }
-                else if(content.length()<5){
-                    Toast.makeText(context, "리뷰 5자 이상 입력해주세요.", Toast.LENGTH_SHORT).show();
+                else if(content.length()<3){
+                    Toast.makeText(context, "리뷰를 입력해주세요.(3자 이상)", Toast.LENGTH_SHORT).show();
                 }
                 else {
                     String userID = user_id;
@@ -108,11 +109,11 @@ public class ReviewDialog{
                 String tag = String.valueOf(tvTag.getText());
                 // Log.d("logwhat", String.valueOf(tvTag.getText()));
                 String content = String.valueOf(tvContent.getText());
-                if(tag.isEmpty()) {
-                    Toast.makeText(context, "메뉴명을 입력해주세요.", Toast.LENGTH_SHORT).show();
+                if(tag.length()<2) {
+                    Toast.makeText(context, "메뉴명을 입력해주세요.(2자 이상)", Toast.LENGTH_SHORT).show();
                 }
-                else if(content.length()<5){
-                    Toast.makeText(context, "리뷰 5자 이상 입력해주세요.", Toast.LENGTH_SHORT).show();
+                else if(content.length()<3){
+                    Toast.makeText(context, "리뷰를 입력해주세요.(3자 이상)", Toast.LENGTH_SHORT).show();
                 }
                 else {
                     String userID = user_id;

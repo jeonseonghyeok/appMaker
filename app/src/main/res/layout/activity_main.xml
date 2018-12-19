@@ -74,7 +74,7 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
 
-            android:layout_weight="1"
+            android:layout_weight="1.2"
             android:orientation="horizontal">
 
             <TextView
@@ -121,26 +121,55 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/strt_info"
+        android:id="@+id/strt_InfoLayout"
         android:layout_width="match_parent"
         android:layout_height="130dp"
         android:layout_gravity="bottom"
         android:background="#FF848BAE"
         android:orientation="vertical"
-        android:visibility="gone">
+        android:visibility="visible">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="30dp"
             android:orientation="horizontal">
 
             <TextView
                 android:id="@+id/strt_name"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:text="TextView"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="5"
                 android:textSize="20sp" />
+
+            <ImageView
+                android:id="@+id/imageView5"
+                android:layout_width="10dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:contentDescription="grade"
+                app:srcCompat="@android:drawable/btn_star" />
+
+            <TextView
+                android:id="@+id/strt_rrag"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:textSize="18sp" />
+
+            <ImageView
+                android:id="@+id/imageView3"
+                android:layout_width="10dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:contentDescription="review"
+                app:srcCompat="@drawable/bt_review" />
+
+            <TextView
+                android:id="@+id/strt_rvc"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:textSize="18sp" />
         </LinearLayout>
 
         <LinearLayout
@@ -198,32 +227,41 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="20dp"
+        android:layout_margin="0dp"
         android:orientation="vertical">
 
         <ImageButton
             android:id="@+id/bt_reSearch"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="8dp"
             android:background="#00000000"
             android:contentDescription="TODO"
+            android:paddingLeft="10dp"
+            android:paddingTop="10dp"
+            android:paddingRight="20dp"
+            android:paddingBottom="20dp"
             app:srcCompat="@drawable/search" />
 
         <ImageButton
             android:id="@+id/bt_showSPL"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="8dp"
             android:background="#00000000"
+            android:paddingLeft="10dp"
+            android:paddingTop="10dp"
+            android:paddingRight="20dp"
+            android:paddingBottom="20dp"
             app:srcCompat="@drawable/markup" />
 
         <ImageButton
             android:id="@+id/bt_STRestaurant"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_margin="8dp"
             android:background="#00000000"
+            android:paddingLeft="10dp"
+            android:paddingTop="10dp"
+            android:paddingRight="20dp"
+            android:paddingBottom="20dp"
             app:srcCompat="@drawable/shop" />
 
     </LinearLayout>

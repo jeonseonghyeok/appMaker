@@ -1,24 +1,21 @@
 package com.example.developer.appmaker;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
-import android.text.Layout;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.LinearLayout;
-import android.widget.TextView;
 
-import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapView;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
@@ -32,6 +29,7 @@ public class GPSFinderFragment extends Fragment implements OnMapReadyCallback {
     private float cameraZoomSize;
     private Bundle extra;
     Marker position;
+    private int currentMarkerIndex;
     public interface GPSListener {
         void onReceivedLatLng(LatLng position);
        // void selectedRestaurant(int position);
@@ -126,6 +124,7 @@ public class GPSFinderFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        currentMarkerIndex=-1;
         extra = getArguments();//액티비티에서 전송한 데이터를 받아오는 객체
         mMap = googleMap;
         //정문위치 lat 37.8663 lng127.7385
@@ -147,14 +146,20 @@ public class GPSFinderFragment extends Fragment implements OnMapReadyCallback {
         mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
             public boolean onMarkerClick(Marker marker) {
-                Log.d("asd", "id: "+marker.getId()+"  index:  "+marker.getId().substring(1)+"   rcode:"+getArguments().getInt(marker.getId()));
-                if(marker.getTitle()!=null)//위치좌표 또는 오류가게좌표 가 아닐때 이동동작
-                    moveToRestaurant(Integer.parseInt(marker.getId().substring(1))-1);
-               return false;//false 해주어야 마크에 대한 정보가 뜸
+                Log.d("logd", "id: "+marker.getId()+"  index:  "+marker.getId().substring(1)+"   rcode:"+getArguments().getInt(marker.getId()));
+                if(marker.getTitle()!=null) {//위치좌표 또는 오류가게좌표 가 아닐때 이동동작 //본인의 좌표마커클릭시 오류를 방지
+                    int markerIndex=Integer.parseInt(marker.getId().substring(1)) - 1;
+                    moveToRestaurant(markerIndex);
+                }
+               return true;//false 해주어야 마크에 대한 정보가 뜸 리스트에서 선택시에 정보가 뜨지않는 문제로 true로 바꿈
             }
         });
+
     }
 
+    public LatLng getCameraPosition(){
+        return mMap.getCameraPosition().target;
+    }
     /**
      *검색결과를 지도에 뿌려주는 메소드;
      */
@@ -169,16 +174,50 @@ public class GPSFinderFragment extends Fragment implements OnMapReadyCallback {
                     .title(extra.getString("n"+i))
                     .alpha((extra.getFloat("g"+i)+2)/7f)//투명도
                     .snippet("평점 "+extra.getFloat("g"+i))
-                    .icon(BitmapDescriptorFactory.defaultMarker(15*(5-extra.getFloat("g"+i)))));
+                    .icon(getMarker(extra.getFloat("g"+i))));
+                    //.icon(BitmapDescriptorFactory.defaultMarker(15*(5-extra.getFloat("g"+i)))));
         }
     }
-
+//수정시 https://stackoverflow.com/questions/14851641/change-marker-size-in-google-maps-api-v2 참고
+//기본마커
+    private BitmapDescriptor getMarker(float grade){
+        if(grade>=4)
+            return BitmapDescriptorFactory.fromResource(R.drawable.map_marker_red);
+        else if(grade>=2.5)
+            return BitmapDescriptorFactory.fromResource(R.drawable.map_marker_pink);
+        else if(grade>=1)
+            return BitmapDescriptorFactory.fromResource(R.drawable.map_marker_yellow);
+        else
+            return BitmapDescriptorFactory.defaultMarker();
+    }
+    //클릭하였을때 나오는 큰마커
+    private BitmapDescriptor getBigMarker(float grade){
+        int markerSize = 150;
+        BitmapDrawable bitmapdraw = null;
+        if(grade>=4)
+            bitmapdraw=(BitmapDrawable)getResources().getDrawable(R.drawable.map_marker_red);
+        else if(grade>=2.5)
+            bitmapdraw=(BitmapDrawable)getResources().getDrawable(R.drawable.map_marker_pink);
+        else if(grade>=1)
+            bitmapdraw=(BitmapDrawable)getResources().getDrawable(R.drawable.map_marker_yellow);
+        else
+            return BitmapDescriptorFactory.defaultMarker();
+        Bitmap b=bitmapdraw.getBitmap();
+        Bitmap BigMarker = Bitmap.createScaledBitmap(b, markerSize, markerSize, false);
+        return  BitmapDescriptorFactory.fromBitmap((Bitmap) BigMarker);
+    }
     /**
      * 현재 맵의 좌표를 이동시켜주는 메소드
      * @param latLng
      */
     private void movePosition(LatLng latLng){//맵의 좌표로 이동, 가게정보를 숨김
-        ((MainActivity)getActivity()).showBasicButtonlayout();
+        if(currentMarkerIndex>=0){//이전에 선택된 마크가 있으면 사이즈를 되돌림
+            m[currentMarkerIndex].setIcon(getMarker(extra.getFloat("g"+(currentMarkerIndex+1))));
+            currentMarkerIndex=-1;
+        }
+        if(((MainActivity)getActivity()).ly_RestaurantInfo.getVisibility()==View.VISIBLE) {//가게정보가 켜져있을때
+            ((MainActivity)getActivity()).showBasicButtonlayout();
+        }
         gpsPosition=latLng;
         position.remove();
         position=mMap.addMarker(new MarkerOptions().position(latLng).icon(BitmapDescriptorFactory.fromResource(R.drawable.android)));
@@ -190,25 +229,33 @@ public class GPSFinderFragment extends Fragment implements OnMapReadyCallback {
      * @param latLng
      */
     public void changedPosition(LatLng latLng){
-        gpsPosition=latLng;
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(gpsPosition));
+        //gpsPosition=latLng;
+        //mMap.moveCamera(CameraUpdateFactory.newLatLng(gpsPosition));
         movePosition(latLng);
 
     }
     //인덱스를 통해 가게로 이동
     public void goToRestaurant(int index){
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(gpsPosition));
+        if(currentMarkerIndex>=0){//이전에 선택된 마크가 있으면 사이즈를 되돌림
+            m[currentMarkerIndex].setIcon(getMarker(extra.getFloat("g"+(currentMarkerIndex+1))));
+        }
+        currentMarkerIndex=index;
+        Log.d("logd", "인덱스 가게이동"+index);
+        m[index].setIcon(getBigMarker(extra.getFloat("g"+(index+1))));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(m[index].getPosition()));
 
     }
     //지도에서 가게로 이동
     public void moveToRestaurant(int index){
+        if(currentMarkerIndex>=0){//이전에 선택된 마크가 있으면 사이즈를 되돌림
+            m[currentMarkerIndex].setIcon(getMarker(extra.getFloat("g"+(currentMarkerIndex+1))));
+        }
+        currentMarkerIndex=index;
+        m[index].setIcon(getBigMarker(extra.getFloat("g"+(index+1))));
         mMap.animateCamera(CameraUpdateFactory.newLatLng(m[index].getPosition()));
-        ((MainActivity)getActivity()).RestaurantInfoOpen(index);
+        ((MainActivity)getActivity()).RestaurantInfoOpen(index);//메인액티비티에서 가게의 정보를 띄움
     }
     public float getMapSize(){
         return mMap.getCameraPosition().zoom;
-    }
-    public void setMapSize(float mapSize){
-       // mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(gpsPosition,mapSize));
     }
 }
