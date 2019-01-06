@@ -8,4 +8,6 @@
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="kakao_app_key">fe68344244e9d3c0ae2b729eed571a18</string>
+    //카카오 인증 키
 </resources>

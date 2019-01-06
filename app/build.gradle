@@ -29,4 +29,7 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
+    // 카카오톡 SDK 추가
+    compile group: project.KAKAO_SDK_GROUP, name: 'usermgmt',
+            version: project.KAKAO_SDK_VERSION
 }
