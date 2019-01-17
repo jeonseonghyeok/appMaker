@@ -2,8 +2,8 @@ package com.example.developer.appmaker;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Dialog;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -65,7 +65,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
     TextView strt_name,strt_rrag,strt_rvc;//선택된(selected)가게(restaurant) 이름(name)
     InputMethodManager inputMethodManager;//키보드 사용유무를 관리하는 매니저
 
-    String user_id = "admin";
+    String userKakaoIdCode = "";
     boolean isEmptyList;//검색결과가 없는지 확인
     String searchedWord;//검색된 단어(새로운 단어가 검색되기 전까지 변경X)
     boolean isFirstReview = true;//첫리뷰인가(한 가게대상)
@@ -88,7 +88,8 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-
+        Intent intent = getIntent();
+        userKakaoIdCode=intent.getExtras().getLong("userKakaoIdCode")+"";
         backPressCloseHandler = new BackPressCloseHandler(this);
         gpsSearch = (AutoCompleteTextView) findViewById(R.id.gpsSearch);
         tagSearch = (AutoCompleteTextView) findViewById(R.id.tagSearch);
@@ -203,12 +204,12 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         @Override
         public void onClick(View v) {
 
-            ReviewDialog reviewDialog = new ReviewDialog(MainActivity.this);//리뷰다이얼로그를 생성한다.
+            CustomDialog customDialog = new CustomDialog(MainActivity.this);//리뷰다이얼로그를 생성한다.
             float curRtReviewGrade = ratingBar.getRating();
             if (isFirstReview)
-                reviewDialog.reviewInsert(user_id, curRtCode, curRtReviewGrade, ly_RestaurantInfo);
+                customDialog.reviewInsert(userKakaoIdCode, curRtCode, curRtReviewGrade, ly_RestaurantInfo);
             else
-                reviewDialog.reviewUpdate(user_id, curRtCode, curRtReviewGrade, rvTag, rvContent, ly_RestaurantInfo);
+                customDialog.reviewUpdate(userKakaoIdCode, curRtCode, curRtReviewGrade, rvTag, rvContent, ly_RestaurantInfo);
         }
     };
 
@@ -871,7 +872,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         strt_rvc.setText(bundle.getInt("rvc"+(index+1))+"");
         curRtCode=bundle.getInt("m"+(index+1));
         Log.d("updatTest", "테스트시작");
-        isUpdateReview("http://210.115.48.131/getIsUpdateReview.php?rcode="+curRtCode+"&user_id="+user_id);
+        isUpdateReview("http://210.115.48.131/getIsUpdateReview.php?rcode="+curRtCode+"&user_id="+userKakaoIdCode);
         ly_RestaurantInfo.setVisibility(View.VISIBLE);
         ly_savePosition.setVisibility(View.GONE);
         ly_basicButtons.setVisibility(View.GONE);

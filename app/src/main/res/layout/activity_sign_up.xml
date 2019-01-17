@@ -4,9 +4,33 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:gravity="bottom"
+    android:gravity="bottom|center_horizontal"
     android:orientation="vertical"
     tools:context=".SignUpActivity">
+
+    <LinearLayout
+        android:id="@+id/signUpLayout"
+        android:layout_width="250dp"
+        android:layout_height="50dp"
+        android:orientation="horizontal"
+        android:visibility="invisible">
+
+        <EditText
+            android:id="@+id/pt_nickname"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:ems="10"
+            android:hint="NickName"
+            android:inputType="textPersonName" />
+
+        <Button
+            android:id="@+id/bt_signUpConfirm"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="확인" />
+    </LinearLayout>
 
     <com.kakao.usermgmt.LoginButton
         android:id="@+id/btn_kakao_login"

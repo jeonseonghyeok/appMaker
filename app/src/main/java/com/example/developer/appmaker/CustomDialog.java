@@ -4,19 +4,17 @@ import android.content.Context;
 import android.util.Log;
 import android.view.View;
 import android.view.Window;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 /**
  * Created by Administrator on 2017-08-07.
  */
-public class ReviewDialog{
+public class CustomDialog {
     private Context context;
-    public ReviewDialog(Context context){
+    public CustomDialog(Context context){
         this.context = context;
     }
     // 호출할 다이얼로그 함수를 정의한다.
@@ -134,6 +132,33 @@ public class ReviewDialog{
                 Toast.makeText(context, "취소 했습니다.", Toast.LENGTH_SHORT).show();
                 // 커스텀 다이얼로그를 종료한다.
                 dlg.dismiss();
+            }
+        });
+    }
+    public void signUp(final long userKakaoIdCode) {//가게코드,가게평가점수,가게리뷰버튼를 받아옴
+        // 커스텀 다이얼로그를 정의하기위해 Dialog클래스를 생성한다.
+        final Dialog dlg = new Dialog(context);
+
+        // 액티비티의 타이틀바를 숨긴다.
+        dlg.requestWindowFeature(Window.FEATURE_NO_TITLE);
+        //요청이 이 다이어로그를 종료할 수 없게 지정
+        dlg.setCancelable(false);
+        // 커스텀 다이얼로그의 레이아웃을 설정한다.
+        dlg.setContentView(R.layout.dialog_sign_up);
+
+        // 커스텀 다이얼로그를 노출한다.
+        dlg.show();
+
+        // 커스텀 다이얼로그의 각 위젯들을 정의한다.
+        final Button okButton = (Button) dlg.findViewById(R.id.bt_reviewConfirm);//확인버튼
+
+        okButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+
+                //String content = String.valueOf(tvContent.getText());
+
             }
         });
     }
