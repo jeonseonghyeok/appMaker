@@ -154,6 +154,8 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         }
         else if(!isEmptyList){
             isEmptyList=true;
+            searchedWord="";
+            bt_reSearch.setVisibility(View.GONE);
             bundle.putInt("size", 0);
             tab_list.setSelected(false);
             tab_map.setSelected(true);
@@ -668,10 +670,15 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
 
     }
     public void searchRestaurant(String searchWord){
-        GPSFinderFragment gpsFragment = (GPSFinderFragment)getSupportFragmentManager().findFragmentById(R.id.vp);
-        gpsMove(gpsFragment.getCameraPosition());
-        getData("http://210.115.48.131/getSearchResult.php?type="+searchWord+"&map_size="+mapSize+"&lat="+position.latitude+"&lng="+position.longitude);
-        inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(), 0);//키보드자판 숨기기
+        if(searchWord.length()<2){
+            Toast.makeText(MainActivity.this, "2자 이상 입력해주세요.", Toast.LENGTH_SHORT).show();
+        }
+        else {
+            GPSFinderFragment gpsFragment = (GPSFinderFragment) getSupportFragmentManager().findFragmentById(R.id.vp);
+            gpsMove(gpsFragment.getCameraPosition());
+            getData("http://210.115.48.131/getSearchResult.php?type=" + searchWord + "&map_size=" + mapSize + "&lat=" + position.latitude + "&lng=" + position.longitude);
+            inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(), 0);//키보드자판 숨기기
+        }
     }
     //좌표이동 메소드
     private void gpsMove(double lat,double lng){
@@ -756,6 +763,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                     tab_list.callOnClick();
                     closeLayoutForMap();
                     searchedWord=tagSearch.getText().toString();
+                    bt_reSearch.setVisibility(View.VISIBLE);
                 }
                 else{//검색에 실패하거나 변경되지 않았을때
                     tab_map.callOnClick();

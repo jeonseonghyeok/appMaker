@@ -240,6 +240,7 @@
             android:paddingTop="10dp"
             android:paddingRight="20dp"
             android:paddingBottom="20dp"
+            android:visibility="gone"
             app:srcCompat="@drawable/search" />
 
         <ImageButton
