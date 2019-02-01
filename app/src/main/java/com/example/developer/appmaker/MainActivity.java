@@ -676,7 +676,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         else {
             GPSFinderFragment gpsFragment = (GPSFinderFragment) getSupportFragmentManager().findFragmentById(R.id.vp);
             gpsMove(gpsFragment.getCameraPosition());
-            getData("http://210.115.48.131/getSearchResult.php?type=" + searchWord + "&map_size=" + mapSize + "&lat=" + position.latitude + "&lng=" + position.longitude);
+            getData("http://210.115.48.131/getSearchResult.php?type=" + searchWord + "&map_size=" + mapSize + "&lat=" + position.latitude + "&lng=" + position.longitude+"&user_id="+userKakaoIdCode);
             inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(), 0);//키보드자판 숨기기
         }
     }
@@ -749,14 +749,23 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
 
                 //   Log.d("logcatch", "showList: 4011line");
                 for (int i = 1; i <= restaurants.length(); i++) {
+                    String temp;
                     JSONObject c = restaurants.getJSONObject(i-1);
                     //String id = c.getString(TAG_ID);
                     bundle.putInt("m"+i,c.getInt("rcode"));//맵의 마커와 검색결과의 code를 매칭
                     bundle.putString("n" + i, c.getString("rname"));
                     bundle.putDouble("lat" + i, c.getDouble("rgps_lat"));
                     bundle.putDouble("lng" + i, c.getDouble("rgps_lng"));
+                   temp=c.getString("address").substring(8);
+                    bundle.putString("add" + i, temp);
+                    temp=c.getString("tel");
+                   /* if(temp.contains("null"))
+                        bundle.putString("tel" + i,"");
+                    else*/
+                        bundle.putString("tel" + i,temp);
                     bundle.putFloat("g" + i, (float) c.getDouble("rag"));
                     bundle.putInt("rvc" + i, c.getInt("rc"));
+
                 }
                 vp.setAdapter(new searchResultPagerAdapter(getSupportFragmentManager()));
                 if(!searchedWord.equals(tagSearch.getText().toString())) {//검색어가 변경되었을때

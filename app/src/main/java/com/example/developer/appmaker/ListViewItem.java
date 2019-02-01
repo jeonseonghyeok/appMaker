@@ -6,10 +6,14 @@ public class ListViewItem {
     private Drawable iconDrawable;
     private String restaurantName;
     private String restaurantGrade;
-    ListViewItem(Drawable icon, String restaurantName, String restaurantGrade){
+    private String restaurantAddress;
+    private String restaurantTelephone;
+    ListViewItem(Drawable icon, String restaurantName, String restaurantGrade,String restaurantAddress,String restaurantTelephone){
         this.iconDrawable=icon;
         this.restaurantName=restaurantName;
         this.restaurantGrade=restaurantGrade;
+        this.restaurantAddress=restaurantAddress;
+        this.restaurantTelephone=restaurantTelephone;
     }
     public void setIcon(Drawable icon) {
         iconDrawable = icon;
@@ -33,6 +37,14 @@ public class ListViewItem {
 
     public String getDesc() {
         return this.restaurantGrade;
+    }
+
+    public String getAddress() {
+        return restaurantAddress;
+    }
+
+    public String getTelephone() {
+        return restaurantTelephone;
     }
 }
 
