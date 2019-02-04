@@ -145,7 +145,6 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         bt_reSearch.setOnClickListener(reSearchListener);
         bt_savePosition.setOnClickListener(savePositionListener);
     }
-
     //뒤로가기 버튼을 제어함
     public void onBackPressed() {//
         //super.onBackPressed();
@@ -207,11 +206,20 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         public void onClick(View v) {
 
             CustomDialog customDialog = new CustomDialog(MainActivity.this);//리뷰다이얼로그를 생성한다.
+            customDialog.setDialogResultListener(new DialogResultListener() {
+                @Override
+                public void okButtonClicked() {
+                    showBasicButtonlayout();
+                        tagSearch.setText(searchedWord);
+                        tagSearch.dismissDropDown();
+                        searchRestaurant(searchedWord);
+                }
+            });
             float curRtReviewGrade = ratingBar.getRating();
             if (isFirstReview)
-                customDialog.reviewInsert(userKakaoIdCode, curRtCode, curRtReviewGrade, ly_RestaurantInfo);
+                customDialog.reviewInsert(userKakaoIdCode, curRtCode, curRtReviewGrade);
             else
-                customDialog.reviewUpdate(userKakaoIdCode, curRtCode, curRtReviewGrade, rvTag, rvContent, ly_RestaurantInfo);
+                customDialog.reviewUpdate(userKakaoIdCode, curRtCode, curRtReviewGrade, rvTag, rvContent);
         }
     };
 
@@ -420,6 +428,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
                 && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
+            gpsMove(37.869071,127.742778);
             gpsSearch.setText("GPS권한없음(직접설정)");
             requestPermissions(
                     new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
@@ -848,13 +857,13 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         try {
             isFirstReview=true;//첫 리뷰로 가정
             ratingBar.setRating(0);
-            if(!myJSON.isEmpty()) {
+            if(!myJSON.isEmpty()) {//첫 리뷰가 아님
+                isFirstReview=false;
                 JSONObject jsonObj = new JSONObject(myJSON);
                 JSONArray review = jsonObj.getJSONArray("result");//데이터집합의 이름
 
                 JSONObject c = review.getJSONObject(0);
                // Log.d("updatTest", c.getDouble("rv_grade")+"");
-                isFirstReview=false;//첫 리뷰가 아님
                 bt_review.setBackgroundResource(R.drawable.bt_review_recurring);
                 ratingBar.setRating((float) c.getDouble("rv_grade"));
                 rvTag=c.getString("rv_tag");
@@ -896,6 +905,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
     }
     //기본버튼을 띄우는 메소드
     public void showBasicButtonlayout(){
+        Log.d("logd:기본버튼민 보이게하는 메소드 실행", "동작");
         ly_RestaurantInfo.setVisibility(View.GONE);
         ly_savePosition.setVisibility(View.GONE);
         ly_basicButtons.setVisibility(View.VISIBLE);

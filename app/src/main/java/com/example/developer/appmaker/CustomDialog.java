@@ -12,13 +12,17 @@ import android.widget.Toast;
 /**
  * Created by Administrator on 2017-08-07.
  */
-public class CustomDialog {
+public class CustomDialog{
+    private DialogResultListener dialogResultListener;
     private Context context;
     public CustomDialog(Context context){
         this.context = context;
     }
+    public void setDialogResultListener(DialogResultListener dialogResultListener){
+        this.dialogResultListener = dialogResultListener;
+    }
     // 호출할 다이얼로그 함수를 정의한다.
-    public void reviewInsert(final String user_id,final int curRtCode, final float curRtReviewGrade,final LinearLayout strt_info) {//가게코드,가게평가점수,가게리뷰버튼를 받아옴
+    public void reviewInsert(final String user_id,final int curRtCode, final float curRtReviewGrade) {//가게코드,가게평가점수,가게리뷰버튼를 받아옴
         // 커스텀 다이얼로그를 정의하기위해 Dialog클래스를 생성한다.
         final Dialog dlg = new Dialog(context);
 
@@ -41,9 +45,6 @@ public class CustomDialog {
         okButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
-                //strt_info.setVisibility(View.GONE);//가게정보를 내린다...?
-                // 커스텀 다이얼로그를 종료한다.
                 String rcode = curRtCode+"";
                 String tag = String.valueOf(tvTag.getText());
                 // Log.d("logwhat", String.valueOf(tvTag.getText()));
@@ -61,7 +62,7 @@ public class CustomDialog {
                     // InsertData task = new InsertData();
                     task.execute("http://" + "210.115.48.131" + "/postFirstReview.php", rcode, tag, content, grade, userID);
                     Toast.makeText(context, "리뷰를 등록하였습니다.", Toast.LENGTH_SHORT).show();
-                    strt_info.setVisibility(View.GONE);
+                    dialogResultListener.okButtonClicked();
                     dlg.dismiss();
                 }
             }
@@ -69,13 +70,13 @@ public class CustomDialog {
         cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Toast.makeText(context, "취소 했습니다.", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(context, "취소 했습니다.", Toast.LENGTH_SHORT).show();
                 // 커스텀 다이얼로그를 종료한다.
                 dlg.dismiss();
             }
         });
     }
-    public void reviewUpdate(final String user_id, final int curRtCode, final double curRtReviewGrade,final String rvTag,final String rvContent,final LinearLayout strt_info) {//가게코드,가게평가점수,가게리뷰버튼(수정필요)를 받아옴
+    public void reviewUpdate(final String user_id, final int curRtCode, final double curRtReviewGrade,final String rvTag,final String rvContent) {//가게코드,가게평가점수,가게리뷰버튼(수정필요)를 받아옴
         // 커스텀 다이얼로그를 정의하기위해 Dialog클래스를 생성한다.
         final Dialog dlg = new Dialog(context);
 
@@ -100,9 +101,6 @@ public class CustomDialog {
         okButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-
-                //strt_info.setVisibility(View.GONE);//가게정보를 내린다...?
-                // 커스텀 다이얼로그를 종료한다.
                 String rcode = curRtCode+"";
                 String tag = String.valueOf(tvTag.getText());
                 // Log.d("logwhat", String.valueOf(tvTag.getText()));
@@ -121,7 +119,7 @@ public class CustomDialog {
                     task.execute("http://" + "210.115.48.131" + "/postUpdateReview.php", rcode, tag, content, grade, userID);
                     //bt_review.setBackgroundResource(R.drawable.bt_review_recurring);
                     Toast.makeText(context, "리뷰를 수정하였습니다.", Toast.LENGTH_SHORT).show();
-                    strt_info.setVisibility(View.GONE);
+                    dialogResultListener.okButtonClicked();
                     dlg.dismiss();
                 }
             }
@@ -129,7 +127,7 @@ public class CustomDialog {
         cancelButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Toast.makeText(context, "취소 했습니다.", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(context, "취소 했습니다.", Toast.LENGTH_SHORT).show();
                 // 커스텀 다이얼로그를 종료한다.
                 dlg.dismiss();
             }
