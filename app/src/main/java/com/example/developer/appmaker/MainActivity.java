@@ -567,7 +567,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                     gpsSearch.setText("직접설정(GPS사용불가)");
                     gpsMove(37.869071,127.742778);
                     // GPS 를 사용할수 없으므로 기본위치에서
-                }
+                }//
                 gpsFragment.changedPosition(position);
                 inputMethodManager.hideSoftInputFromWindow(gpsSearch.getWindowToken(),0);
             }
