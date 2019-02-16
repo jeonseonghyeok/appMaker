@@ -244,7 +244,7 @@
             app:srcCompat="@drawable/search" />
 
         <ImageButton
-            android:id="@+id/bt_showSPL"
+            android:id="@+id/bt_showSUPL"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="#00000000"
@@ -253,9 +253,9 @@
             android:paddingRight="20dp"
             android:paddingBottom="20dp"
             app:srcCompat="@drawable/markup" />
-
+        <!-- button_showSaveRestaurantPostionLayout -->
         <ImageButton
-            android:id="@+id/bt_STRestaurant"
+            android:id="@+id/bt_showSRPL"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="#00000000"
@@ -268,7 +268,7 @@
     </LinearLayout>
 
     <LinearLayout
-        android:id="@+id/savePositionLayout"
+        android:id="@+id/ly_save_UserPos"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|center_horizontal"
@@ -284,19 +284,59 @@
             android:layout_weight="1"
             android:background="#98F"
             android:ems="7"
-            android:hint="장소명"
+            android:hint="위치 저장"
             android:inputType="textPersonName"
             android:padding="5dp"
             android:textSize="22sp" />
 
         <Button
-            android:id="@+id/bt_savePosition"
+            android:id="@+id/bt_save_UserPos"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:paddingBottom="5dp"
             android:text="등록" />
     </LinearLayout>
+    <!--
+            saveRestaurantPosition
+            가게위치저장버튼
+      -->
+    <LinearLayout
+        android:id="@+id/ly_save_RestaurantPos"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|center_horizontal"
+        android:layout_marginBottom="30dp"
+        android:orientation="horizontal"
+        android:visibility="gone">
+        <!--
+                RestaurantName
+                가게위치저장버튼
+         -->
+        <EditText
+            android:id="@+id/rtPosName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="20dp"
+            android:layout_weight="1"
+            android:background="#98F"
+            android:ems="7"
+            android:hint="가게등록"
+            android:inputType="textPersonName"
+            android:padding="5dp"
+            android:textSize="22sp" />
 
+        <!--
+        saveRestaurantPosition
+        가게위치저장버튼
+        -->
+        <Button
+            android:id="@+id/bt_save_RestaurantPos"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingBottom="5dp"
+            android:text="등록" />
+    </LinearLayout>
 
 </FrameLayout>

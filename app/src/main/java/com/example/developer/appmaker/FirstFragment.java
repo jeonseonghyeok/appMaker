@@ -56,7 +56,7 @@ public class FirstFragment extends Fragment {
         Bundle extra = getArguments();//액티비티에서 전송한 데이터를 받아오는 객체
         int size = extra.getInt("size");//검색된 수 만큼 리스트를 생성//너무많을시에 어떻게할지 구상할것
         for (int i = 1; i <= size; i++) {
-            adapter.addItem(null, extra.getString("n"+i) , extra.getFloat("g"+i)+ "점",extra.getString("add"+i),extra.getString("tel")+i);
+            adapter.addItem(null, extra.getString("n"+i) , extra.getFloat("g"+i)+ "점",extra.getString("add"+i),extra.getString("tel"+i));
         }
         listview.setOnItemClickListener(listener);
 

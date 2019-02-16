@@ -51,9 +51,9 @@ import java.net.URL;
 public class MainActivity extends AppCompatActivity implements GPSFinderFragment.GPSListener, FirstFragment.OnMyListener {
     BackPressCloseHandler backPressCloseHandler;
     ViewPager vp;
-    LinearLayout ll,ly_savePosition,ly_basicButtons,ly_RestaurantInfo;
-    Button gpsFindButton, bt_downGrade, bt_upGrade, bt_reviewConfirm, bt_reviewCancel, bt_review, bt_savePosition;
-    ImageButton bt_showSPL,bt_reSearch;
+    LinearLayout ll, ly_basicButtons, ly_RestaurantInfo, ly_save_UserPos, ly_save_RestaurantPos;
+    Button gpsFindButton, bt_downGrade, bt_upGrade, bt_reviewConfirm, bt_reviewCancel, bt_review, bt_save_UserPos;
+    ImageButton bt_showSUPL, bt_reSearch, bt_showSRPL;
     RatingBar ratingBar;
     String[] tagList_Array, gpsList_Array;
     LatLng position;//현재위치를 가지고있는 객체
@@ -120,11 +120,13 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         bt_upGrade = (Button) findViewById(R.id.bt_upGrade);
         bt_downGrade = (Button) findViewById(R.id.bt_downGrade);
         bt_review = (Button) findViewById(R.id.bt_review);
-        bt_savePosition= (Button) findViewById(R.id.bt_savePosition);
+        bt_save_UserPos= (Button) findViewById(R.id.bt_save_UserPos);
         ratingBar = (RatingBar) findViewById(R.id.ratingBar);
-        bt_showSPL = (ImageButton)findViewById(R.id.bt_showSPL);
+        bt_showSUPL = (ImageButton)findViewById(R.id.bt_showSUPL);//show SaveUserPositionLayout
+        bt_showSRPL= (ImageButton)findViewById(R.id.bt_showSRPL);//show SaveRestaurantPositionLayout
         bt_reSearch =  (ImageButton)findViewById(R.id.bt_reSearch);
-        ly_savePosition = (LinearLayout)findViewById(R.id.savePositionLayout);
+        ly_save_UserPos = (LinearLayout)findViewById(R.id.ly_save_UserPos);
+        ly_save_RestaurantPos = (LinearLayout)findViewById(R.id.ly_save_RestaurantPos);
         ly_basicButtons =  (LinearLayout)findViewById(R.id.basicButtonsLayout);
         ly_RestaurantInfo = (LinearLayout) findViewById(R.id.strt_InfoLayout);
 
@@ -141,14 +143,15 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         bt_upGrade.setOnClickListener(upGradeListener);
         bt_downGrade.setOnClickListener(downGradeListener);
         bt_review.setOnClickListener(reviewBTListener);
-        bt_showSPL.setOnClickListener(showSavePositionLayoutListener);
+        bt_showSUPL.setOnClickListener(showSavePositionLayoutListener);
+        bt_showSRPL.setOnClickListener(showSaveRestaurantPositionLayoutListener);
         bt_reSearch.setOnClickListener(reSearchListener);
-        bt_savePosition.setOnClickListener(savePositionListener);
+        bt_save_UserPos.setOnClickListener(savePositionListener);
     }
     //뒤로가기 버튼을 제어함
     public void onBackPressed() {//
         //super.onBackPressed();
-        if(ly_savePosition.getVisibility()==View.VISIBLE || ly_RestaurantInfo.getVisibility()==View.VISIBLE) {//
+        if(ly_save_UserPos.getVisibility()==View.VISIBLE || ly_RestaurantInfo.getVisibility()==View.VISIBLE || ly_save_RestaurantPos.getVisibility()==View.VISIBLE) {//
             showBasicButtonlayout();
         }
         else if(!isEmptyList){
@@ -178,7 +181,7 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         }
     };
     /**
-     * 위치를 저장하는 기능의 리스너
+     * 본인위치를 저장하는 기능의 리스너
      */
     OnClickListener savePositionListener = new OnClickListener() {
         @Override
@@ -187,13 +190,35 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         }
     };
     /**
-     * 위치를 저장하는 레이아웃을 노출시키도록 하는 리스너
+     * 본인위치를 저장하는 레이아웃을 노출시키는 리스너
      */
     OnClickListener showSavePositionLayoutListener = new OnClickListener() {
         @Override
         public void onClick(View v) {
             ly_RestaurantInfo.setVisibility(View.GONE);
-            ly_savePosition.setVisibility(View.VISIBLE);
+            ly_save_UserPos.setVisibility(View.VISIBLE);
+            ly_save_RestaurantPos.setVisibility(View.GONE);
+            ly_basicButtons.setVisibility(View.GONE);
+        }
+    };
+    /**
+     * 가게위치를 저장하는 기능의 리스너
+     */
+    OnClickListener SaveRestaurantPositionListener = new OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            save_Position(positionName);
+        }
+    };
+    /**
+     * 가게위치를 저장하는 레이아웃을 노출시키는 리스너
+     */
+    OnClickListener showSaveRestaurantPositionLayoutListener = new OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            ly_RestaurantInfo.setVisibility(View.GONE);
+            ly_save_UserPos.setVisibility(View.GONE);
+            ly_save_RestaurantPos.setVisibility(View.VISIBLE);
             ly_basicButtons.setVisibility(View.GONE);
         }
     };
@@ -768,10 +793,10 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
                    temp=c.getString("address").substring(8);
                     bundle.putString("add" + i, temp);
                     temp=c.getString("tel");
-                   /* if(temp.contains("null"))
-                        bundle.putString("tel" + i,"");
-                    else*/
-                        bundle.putString("tel" + i,temp);
+                   if(temp.equals("null"))
+                        bundle.putString("tel" + i,"...");
+                   else
+                       bundle.putString("tel" + i,temp);
                     bundle.putFloat("g" + i, (float) c.getDouble("rag"));
                     bundle.putInt("rvc" + i, c.getInt("rc"));
 
@@ -899,22 +924,27 @@ public class MainActivity extends AppCompatActivity implements GPSFinderFragment
         curRtCode=bundle.getInt("m"+(index+1));
         Log.d("updatTest", "테스트시작");
         isUpdateReview("http://210.115.48.131/getIsUpdateReview.php?rcode="+curRtCode+"&user_id="+userKakaoIdCode);
+
         ly_RestaurantInfo.setVisibility(View.VISIBLE);
-        ly_savePosition.setVisibility(View.GONE);
+        ly_save_UserPos.setVisibility(View.GONE);
+        ly_save_RestaurantPos.setVisibility(View.GONE);
         ly_basicButtons.setVisibility(View.GONE);
     }
     //기본버튼을 띄우는 메소드
     public void showBasicButtonlayout(){
         Log.d("logd:기본버튼민 보이게하는 메소드 실행", "동작");
+
         ly_RestaurantInfo.setVisibility(View.GONE);
-        ly_savePosition.setVisibility(View.GONE);
+        ly_save_UserPos.setVisibility(View.GONE);
+        ly_save_RestaurantPos.setVisibility(View.GONE);
         ly_basicButtons.setVisibility(View.VISIBLE);
     }
 
     //맵에서 사용되는 레이아웃을 숨김(위치저장,가게등록,기본버튼들)
     public void closeLayoutForMap(){
         ly_RestaurantInfo.setVisibility(View.GONE);
-        ly_savePosition.setVisibility(View.GONE);
+        ly_save_UserPos.setVisibility(View.GONE);
+        ly_save_RestaurantPos.setVisibility(View.GONE);
         ly_basicButtons.setVisibility(View.GONE);
     }
 }
